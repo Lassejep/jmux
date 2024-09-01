@@ -1,33 +1,50 @@
-class TmuxSession:
-    def __init__(self, session_name):
-        self.session_name = session_name
-        self.windows = []
+from enum import Enum
 
-    def add_window(self, window):
-        self.windows.append(window)
 
-    def __str__(self):
-        return f"{self.session_name}: {self.windows}"
+class TmuxSplit(Enum):
+    NONE = 1
+    VERTICAL = 2
+    HORIZONTAL = 3
+
+
+class TmuxPane:
+    def __init__(self, pane_name: str, pane_id: int = 0,
+                 pane_size: int = 100, is_active: bool = True,
+                 split_direction: TmuxSplit = TmuxSplit.NONE) -> None:
+        self.name: str = pane_name
+        self.id: int = pane_id
+        self.size: int = pane_size
+        self.is_active: bool = is_active
+        self.split_direction: TmuxSplit = split_direction
+
+    def __str__(self) -> str:
+        return self.name
 
 
 class TmuxWindow:
     def __init__(self, window_name):
-        self.window_name = window_name
+        self.name = window_name
         self.panes = []
 
     def add_pane(self, pane):
         self.panes.append(pane)
 
     def __str__(self):
-        return f"{self.window_name}: {self.panes}"
+        str_panes = "\n".join([f"    {pane}" for pane in self.panes])
+        return f"{self.name}:\n{str_panes}"
 
 
-class TmuxPane:
-    def __init__(self, pane_name):
-        self.pane_name = pane_name
+class TmuxSession:
+    def __init__(self, session_name: str) -> None:
+        self.name: str = session_name
+        self.windows: list[TmuxWindow] = []
 
-    def __str__(self):
-        return self.pane_name
+    def add_window(self, window: TmuxWindow) -> None:
+        self.windows.append(window)
+
+    def __str__(self) -> str:
+        str_windows = "\n".join([f"  {window}" for window in self.windows])
+        return f"{self.name}:\n{str_windows}"
 
 
 def parse_tmux_sessions():
