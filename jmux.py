@@ -1,6 +1,7 @@
 from enum import Enum
 import json
 import subprocess
+import time
 
 
 class TmuxSplit(Enum):
@@ -49,24 +50,34 @@ class TmuxPane:
             target = f"{window}.{str(self.split_id)}"
             match self.split_direction:
                 case TmuxSplit.VERTICAL:
-                    args = f"-v -p {self.size}"
+                    args = f"-v -l {self.size}"
                 case TmuxSplit.HORIZONTAL:
-                    args = f"-h -p {self.size}"
+                    args = f"-h -l {self.size}"
+            print(f"running: {command} {target} {args}")
             subprocess.Popen(f"{command} {target} {args}", shell=True)
+        time.sleep(0.1)
         command = "tmux send-keys -t"
         target = f"{window}.{str(self.id)}"
-        args = f"'cd {self.working_dir} && clear && {self.command}' C-m"
+        args = f"'cd {self.working_dir} && clear' C-m"
+        print(f"running: {command} {target} {args}")
         subprocess.Popen(f"{command} {target} {args}", shell=True)
+        if self.command:
+            time.sleep(0.1)
+            command = "tmux send-keys -t"
+            target = f"{window}.{str(self.id)}"
+            args = f"'{self.command}' C-m"
+            print(f"running: {command} {target} {args}")
+            subprocess.Popen(f"{command} {target} {args}", shell=True)
 
 
 class TmuxWindow:
     def __init__(self, window_name: str) -> None:
-        self.name = window_name
-        self.panes = []
+        self.name: str = window_name
+        self.panes: [TmuxPane] = []
 
     def add_pane(self, pane: TmuxPane) -> None:
-        pane.id = len(self.panes)
         self.panes.append(pane)
+        pane.id = len(self.panes)
 
     def __str__(self) -> str:
         string = ""
@@ -83,14 +94,20 @@ class TmuxWindow:
         return window_dict
 
     def build(self, session_name: str) -> None:
-        subprocess.Popen(f"tmux new-window -t {session_name} -n {self.name}",
-                         shell=True)
+        command = f"tmux new-window -t {session_name} -n {self.name}"
+        print(f"running: {command}")
+        subprocess.Popen(command, shell=True)
+        time.sleep(0.1)
         for pane in self.panes:
+            print(f"Building pane {pane.id}")
             pane.build(session_name, self.name)
+        time.sleep(0.1)
         for pane in self.panes:
             if pane.is_active:
                 target = f"{session_name}:{self.name}.{pane.id}"
-                subprocess.Popen(f"tmux select-pane -t {target}", shell=True)
+                command = f"tmux select-pane -t {target}"
+                print(f"running: {command}")
+                subprocess.Popen(command, shell=True)
 
 
 class TmuxSession:
@@ -118,8 +135,9 @@ class TmuxSession:
     # FIXME: Find a way to detach from current session before creating new one
     def build(self) -> None:
         subprocess.Popen(
-            f"tmux new-session -A {self.name}", shell=True)
+            f"tmux new-session -d -s {self.name}", shell=True)
         for window in self.windows:
+            print(f"Building window {window.name}")
             window.build(self.name)
 
 
@@ -134,6 +152,7 @@ def load_tmux_sessions() -> [TmuxSession]:
             for pane_data in window_data.values():
                 pane = TmuxPane(pane_data["size"], pane_data["is_active"],
                                 TmuxSplit[pane_data["split_direction"]],
+                                pane_data["split_id"],
                                 pane_data["working_dir"], pane_data["command"])
                 window.add_pane(pane)
             session.add_window(window)
