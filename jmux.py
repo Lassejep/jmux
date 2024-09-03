@@ -4,6 +4,12 @@ import subprocess
 import time
 
 
+class JmuxError(Exception):
+    def __init__(self, message: str) -> None:
+        self.message = message
+        super().__init__(self.message)
+
+
 class TmuxSplit(Enum):
     NONE = 1
     VERTICAL = 2
@@ -50,24 +56,22 @@ class TmuxPane:
             target = f"{window}.{str(self.split_id)}"
             match self.split_direction:
                 case TmuxSplit.VERTICAL:
-                    args = f"-v -l {self.size}"
+                    args = f"-v -l {self.size} -c {self.working_dir}"
                 case TmuxSplit.HORIZONTAL:
-                    args = f"-h -l {self.size}"
-            print(f"running: {command} {target} {args}")
-            subprocess.Popen(f"{command} {target} {args}", shell=True)
-        time.sleep(0.1)
-        command = "tmux send-keys -t"
-        target = f"{window}.{str(self.id)}"
-        args = f"'cd {self.working_dir} && clear' C-m"
-        print(f"running: {command} {target} {args}")
-        subprocess.Popen(f"{command} {target} {args}", shell=True)
+                    args = f"-h -l {self.size} -c {self.working_dir}"
+            err = subprocess.Popen(f"{command} {target} {args}", shell=True,
+                                   stderr=subprocess.PIPE)
+            if err.communicate()[1].decode("utf-8").strip():
+                raise JmuxError(f"Error creating pane {self.id}")
         if self.command:
             time.sleep(0.1)
             command = "tmux send-keys -t"
             target = f"{window}.{str(self.id)}"
             args = f"'{self.command}' C-m"
-            print(f"running: {command} {target} {args}")
-            subprocess.Popen(f"{command} {target} {args}", shell=True)
+            err = subprocess.Popen(f"{command} {target} {args}", shell=True,
+                                   stderr=subprocess.PIPE)
+            if err.communicate()[1].decode("utf-8").strip():
+                raise JmuxError(f"Error sending command to pane {self.id}")
 
 
 class TmuxWindow:
@@ -95,19 +99,21 @@ class TmuxWindow:
 
     def build(self, session_name: str) -> None:
         command = f"tmux new-window -t {session_name} -n {self.name}"
-        print(f"running: {command}")
-        subprocess.Popen(command, shell=True)
+        err = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE)
+        if err.communicate()[1].decode("utf-8").strip():
+            raise JmuxError(f"Error creating window {self.name}")
         time.sleep(0.1)
         for pane in self.panes:
-            print(f"Building pane {pane.id}")
             pane.build(session_name, self.name)
         time.sleep(0.1)
         for pane in self.panes:
             if pane.is_active:
                 target = f"{session_name}:{self.name}.{pane.id}"
                 command = f"tmux select-pane -t {target}"
-                print(f"running: {command}")
-                subprocess.Popen(command, shell=True)
+                err = subprocess.Popen(command, shell=True,
+                                       stderr=subprocess.PIPE)
+                if err.communicate()[1].decode("utf-8").strip():
+                    raise JmuxError(f"Error selecting pane {pane.id}")
 
 
 class TmuxSession:
@@ -132,12 +138,15 @@ class TmuxSession:
             session_dict[window.name] = window.to_dict()
         return session_dict
 
-    # FIXME: Find a way to detach from current session before creating new one
     def build(self) -> None:
+        command = f"tmux has-session -t {self.name}"
+        err = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE)
+        err = err.communicate()[1].decode("utf-8").strip()
+        if not err:
+            raise JmuxError(f"Session {self.name} already exists")
         subprocess.Popen(
             f"tmux new-session -d -s {self.name}", shell=True)
         for window in self.windows:
-            print(f"Building window {window.name}")
             window.build(self.name)
 
 
@@ -160,14 +169,13 @@ def load_tmux_sessions() -> [TmuxSession]:
     return sessions
 
 
-def create_tmux_session(session_name) -> None:
+def create_tmux_session(session_name: str) -> None:
     sessions = load_tmux_sessions()
     for session in sessions:
         if session.name == session_name:
             session.build()
-            print(f"Session {session_name} created")
             return
-    print(f"Session {session_name} not found")
+    raise JmuxError(f"Session {session_name} not found")
 
 
 def main() -> None:
