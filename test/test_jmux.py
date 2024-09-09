@@ -97,3 +97,22 @@ class TestTmuxWindow(unittest.TestCase):
                               "jmux_test", "-F", "#{window_name}"],
                              capture_output=True)
         self.assertIn(window.name, out.stdout.decode("utf-8"))
+
+
+class TestTmuxSession(unittest.TestCase):
+    def setUp(self):
+        pass
+
+    def tearDown(self):
+        err = subprocess.run(["tmux", "kill-session", "-t",
+                              "jmux_test"], stderr=subprocess.PIPE)
+        if err.stderr:
+            pass
+
+    def test_object_creation(self):
+        try:
+            session = jmux.TmuxSession("jmux_test")
+        except Exception as e:
+            self.fail("TmuxSession creation failed: " + str(e))
+        self.assertEqual(session.name, "jmux_test")
+        self.assertFalse(session.windows)

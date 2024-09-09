@@ -22,9 +22,9 @@ class TmuxWindow:
     def __init__(self, session_id: str, window_name: str) -> None:
         self.session: str = session_id
         self.name: str = window_name
-        self.layout: str = None
+        self.layout: Optional[str] = None
         self.is_active: bool = False
-        self.panes: [TmuxPane] = None
+        self.panes: Optional[TmuxPane] = None
 
     def _run_process(self, args: [str]) -> None:
         try:
@@ -93,3 +93,20 @@ class TmuxWindow:
             args = ["tmux", "select-layout", "-t",
                     f"{self.session}:{self.name}", self.layout]
             self._run_process(args)
+
+
+class TmuxSession:
+    def __init__(self, session_name: str) -> None:
+        self.name: str = session_name
+        self.id: Optional[str] = None
+        self.windows: Optional[TmuxWindow] = None
+
+    def _run_process(self, args: [str]) -> None:
+        try:
+            out = subprocess.run(args, check=True, stdout=subprocess.PIPE)
+            return out.stdout.decode("utf-8")
+        except subprocess.CalledProcessError as e:
+            raise JmuxError(f"Failed to run process: {e}")
+
+    def _load_windows_from_tmux(self) -> None:
+        pass
