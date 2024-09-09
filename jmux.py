@@ -26,14 +26,17 @@ class TmuxWindow:
         self.is_active: bool = False
         self.panes: [TmuxPane] = None
 
-    def __get_pane_string_from_tmux(self) -> str:
+    def _run_process(self, args: [str]) -> None:
         try:
-            tmux_panes = subprocess.check_output(
-                ["tmux", "list-panes", "-t", self.session, "-F",
-                 "#P:#{pane_current_path}:#{pane_active}"],
-            ).decode("utf-8")
+            out = subprocess.run(args, check=True, stdout=subprocess.PIPE)
+            return out.stdout.decode("utf-8")
         except subprocess.CalledProcessError as e:
-            raise JmuxError(f"Failed to get panes: {e}")
+            raise JmuxError(f"Failed to run process: {e}")
+
+    def __get_pane_string_from_tmux(self) -> str:
+        args = ["tmux", "list-panes", "-t", self.session, "-F",
+                "#P:#{pane_current_path}:#{pane_active}"]
+        tmux_panes = self._run_process(args)
         return tmux_panes
 
     def __create_pane_from_string(self, pane_string: str) -> TmuxPane:
@@ -78,24 +81,15 @@ class TmuxWindow:
                 args.extend(["-c", str(pane.path)])
             if not pane.is_active:
                 args.append("-d")
-            try:
-                subprocess.run(args, check=True)
-            except subprocess.CalledProcessError as e:
-                raise JmuxError(f"Failed to create pane: {e}")
+            self._run_process(args)
 
     def create_window(self) -> None:
         args = ["tmux", "new-window", "-t", self.session, "-n", self.name]
         if not self.is_active:
             args.append("-d")
-        try:
-            subprocess.run(args, check=True)
-        except subprocess.CalledProcessError as e:
-            raise JmuxError(f"Failed to create window: {e}")
+        self._run_process(args)
         self._create_panes()
         if self.layout:
-            try:
-                subprocess.run(["tmux", "select-layout", "-t",
-                                f"{self.session}:{self.name}", self.layout],
-                               check=True)
-            except subprocess.CalledProcessError as e:
-                raise JmuxError(f"Failed to set layout: {e}")
+            args = ["tmux", "select-layout", "-t",
+                    f"{self.session}:{self.name}", self.layout]
+            self._run_process(args)
