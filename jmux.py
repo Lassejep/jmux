@@ -19,9 +19,9 @@ class TmuxPane:
 
 
 class TmuxWindow:
-    def __init__(self, id: int) -> None:
-        self.id: int = id
-        self.name: str = str(id)
+    def __init__(self, id: str) -> None:
+        self.id: str = id
+        self.name: str = id
         self.layout: str = None
         self.is_active: bool = False
         self.panes: [TmuxPane] = None
@@ -29,7 +29,7 @@ class TmuxWindow:
     def __get_pane_string_from_tmux(self) -> str:
         try:
             tmux_panes = subprocess.check_output(
-                ["tmux", "list-panes", "-t", self.name, "-F",
+                ["tmux", "list-panes", "-t", self.id, "-F",
                  "#P:#{pane_current_path}:#{pane_active}"],
             ).decode("utf-8")
         except subprocess.CalledProcessError as e:

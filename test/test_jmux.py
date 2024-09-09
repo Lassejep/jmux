@@ -22,27 +22,31 @@ class TestTmuxWindow(unittest.TestCase):
         subprocess.run(["tmux", "new-session", "-d",
                        "-s", "jmux_test"], check=True)
         subprocess.run(["tmux", "rename-window", "-t",
-                       "jmux_test:0", "1"], check=True)
+                       "jmux_test:1", "1"], check=True)
         subprocess.run(["tmux", "split-window", "-t",
-                       "jmux_test:0", "-h"], check=True)
+                       "jmux_test:1", "-h"], check=True)
         subprocess.run(["tmux", "split-window", "-t",
-                       "jmux_test:0", "-v"], check=True)
+                       "jmux_test:1", "-v"], check=True)
+        out = subprocess.run(["tmux", "list-windows", "-t",
+                             "jmux_test", "-F", "#{window_id}"],
+                             capture_output=True)
+        self.window_id = out.stdout.decode("utf-8").strip()
 
     def tearDown(self):
         subprocess.run(["tmux", "kill-session", "-t", "jmux_test"], check=True)
 
     def test_window_object_creation(self):
         try:
-            window = jmux.TmuxWindow(1)
+            window = jmux.TmuxWindow(self.window_id)
         except Exception as e:
             self.fail("TmuxWindow creation failed: " + str(e))
-        self.assertEqual(window.id, 1)
-        self.assertEqual(window.name, "1")
+        self.assertEqual(window.id, self.window_id)
+        self.assertEqual(window.name, self.window_id)
         self.assertFalse(window.layout)
         self.assertFalse(window.is_active)
         self.assertFalse(window.panes)
 
     def test_window_load_panes_from_tmux(self):
-        window = jmux.TmuxWindow(1)
+        window = jmux.TmuxWindow(self.window_id)
         window.load_panes_from_tmux()
-        self.assertNotEqual(len(window.panes), 3)
+        self.assertEqual(len(window.panes), 3)
