@@ -6,7 +6,7 @@ import jmux
 
 
 class TestTmuxPane(unittest.TestCase):
-    def test_pane_object_creation(self):
+    def test_object_creation(self):
         try:
             pane = jmux.TmuxPane(1)
         except Exception as e:
@@ -27,26 +27,73 @@ class TestTmuxWindow(unittest.TestCase):
                        "jmux_test:1", "-h"], check=True)
         subprocess.run(["tmux", "split-window", "-t",
                        "jmux_test:1", "-v"], check=True)
-        out = subprocess.run(["tmux", "list-windows", "-t",
-                             "jmux_test", "-F", "#{window_id}"],
+        out = subprocess.run(["tmux", "list-sessions", "-F",
+                             "#{session_name}:#{session_id}"],
                              capture_output=True)
-        self.window_id = out.stdout.decode("utf-8").strip()
+        for line in out.stdout.decode("utf-8").split("\n"):
+            if "jmux_test" in line:
+                self.session_id = line.split(":")[1]
+
+        out = subprocess.run(["tmux", "list-windows", "-t", "jmux_test",
+                              "-F", "#{window_name}"], capture_output=True)
+        self.window_name = out.stdout.decode("utf-8").strip()
+
+        self.window_dict = {
+            "session": self.session_id,
+            "name": "test_window",
+            "layout": "91ed,172x38,0,0{86x38,0,0,1,85x38,87,0[85x29,87,0,2,85x8,87,30,294]}",
+            "is_active": True,
+            "panes": [
+                {"id": 1, "path": "/home/user",
+                    "is_active": True, "processes": None},
+                {"id": 2, "path": "/home/user",
+                    "is_active": False, "processes": None},
+                {"id": 3, "path": "/home/user",
+                    "is_active": False, "processes": None},
+            ],
+        }
 
     def tearDown(self):
         subprocess.run(["tmux", "kill-session", "-t", "jmux_test"], check=True)
 
-    def test_window_object_creation(self):
+    def test_object_creation(self):
         try:
-            window = jmux.TmuxWindow(self.window_id)
+            window = jmux.TmuxWindow(self.session_id, self.window_name)
         except Exception as e:
             self.fail("TmuxWindow creation failed: " + str(e))
-        self.assertEqual(window.id, self.window_id)
-        self.assertEqual(window.name, self.window_id)
+        self.assertEqual(window.session, self.session_id)
+        self.assertEqual(window.name, self.window_name)
         self.assertFalse(window.layout)
         self.assertFalse(window.is_active)
         self.assertFalse(window.panes)
 
-    def test_window_load_panes_from_tmux(self):
-        window = jmux.TmuxWindow(self.window_id)
+    def test_load_panes_from_tmux(self):
+        window = jmux.TmuxWindow(self.session_id, self.window_name)
         window.load_panes_from_tmux()
         self.assertEqual(len(window.panes), 3)
+
+    def test_to_dict(self):
+        window = jmux.TmuxWindow(self.session_id, self.window_name)
+        window.load_panes_from_tmux()
+        window_dict = window.to_dict()
+        self.assertEqual(window_dict["name"], self.window_name)
+        self.assertEqual(window_dict["panes"][0]["id"], 1)
+
+    def test_load_panes_from_dict(self):
+        window = jmux.TmuxWindow(self.session_id, self.window_name)
+        window.load_panes_from_tmux()
+        window_dict = window.to_dict()
+        window = jmux.TmuxWindow(self.session_id, self.window_name)
+        window.load_panes_from_dict(window_dict["panes"])
+        self.assertEqual(len(window.panes), 3)
+        self.assertEqual(window.panes[0].id, 1)
+
+    def test_create_window(self):
+        window = jmux.TmuxWindow(self.window_dict["session"],
+                                 self.window_dict["name"])
+        window.load_panes_from_dict(self.window_dict["panes"])
+        window.create_window()
+        out = subprocess.run(["tmux", "list-windows", "-t",
+                              "jmux_test", "-F", "#{window_name}"],
+                             capture_output=True)
+        self.assertIn(window.name, out.stdout.decode("utf-8"))

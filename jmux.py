@@ -19,9 +19,9 @@ class TmuxPane:
 
 
 class TmuxWindow:
-    def __init__(self, id: str) -> None:
-        self.id: str = id
-        self.name: str = id
+    def __init__(self, session_id: str, window_name: str) -> None:
+        self.session: str = session_id
+        self.name: str = window_name
         self.layout: str = None
         self.is_active: bool = False
         self.panes: [TmuxPane] = None
@@ -29,7 +29,7 @@ class TmuxWindow:
     def __get_pane_string_from_tmux(self) -> str:
         try:
             tmux_panes = subprocess.check_output(
-                ["tmux", "list-panes", "-t", self.id, "-F",
+                ["tmux", "list-panes", "-t", self.session, "-F",
                  "#P:#{pane_current_path}:#{pane_active}"],
             ).decode("utf-8")
         except subprocess.CalledProcessError as e:
@@ -55,3 +55,47 @@ class TmuxWindow:
     def load_panes_from_tmux(self) -> None:
         tmux_panes = self.__get_pane_string_from_tmux()
         self.panes = self.__convert_pane_string_to_pane_struct(tmux_panes)
+
+    def to_dict(self) -> dict:
+        return {
+            "session": self.session,
+            "name": self.name,
+            "layout": self.layout,
+            "is_active": self.is_active,
+            "panes": [pane.__dict__ for pane in self.panes],
+        }
+
+    def load_panes_from_dict(self, panes: [dict]) -> None:
+        self.panes = [TmuxPane(**pane) for pane in panes]
+
+    def _create_panes(self):
+        if not self.panes:
+            return
+        for pane in self.panes:
+            args = ["tmux", "split-window", "-t",
+                    f"{self.session}:{self.name}"]
+            if pane.path:
+                args.extend(["-c", str(pane.path)])
+            if not pane.is_active:
+                args.append("-d")
+            try:
+                subprocess.run(args, check=True)
+            except subprocess.CalledProcessError as e:
+                raise JmuxError(f"Failed to create pane: {e}")
+
+    def create_window(self) -> None:
+        args = ["tmux", "new-window", "-t", self.session, "-n", self.name]
+        if not self.is_active:
+            args.append("-d")
+        try:
+            subprocess.run(args, check=True)
+        except subprocess.CalledProcessError as e:
+            raise JmuxError(f"Failed to create window: {e}")
+        self._create_panes()
+        if self.layout:
+            try:
+                subprocess.run(["tmux", "select-layout", "-t",
+                                f"{self.session}:{self.name}", self.layout],
+                               check=True)
+            except subprocess.CalledProcessError as e:
+                raise JmuxError(f"Failed to set layout: {e}")
