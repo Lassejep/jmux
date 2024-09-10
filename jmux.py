@@ -1,5 +1,6 @@
 import pathlib
 import subprocess
+import json
 from typing import Optional, List
 from dataclasses import dataclass
 
@@ -13,7 +14,7 @@ class JmuxError(Exception):
 @dataclass
 class TmuxPane:
     id: int
-    path: pathlib.Path = pathlib.Path().home()
+    path: str = str(pathlib.Path().home())
     is_active: bool = False
 
 
@@ -41,7 +42,7 @@ class TmuxWindow:
     def __create_pane_from_string(self, pane_string: str) -> TmuxPane:
         pane_id, pane_path, pane_active = pane_string.split(":")
         pane_id = int(pane_id)
-        pane_path = pathlib.Path(pane_path)
+        pane_path = str(pathlib.Path(pane_path))
         pane_active = pane_active == "1"
         return TmuxPane(pane_id, pane_path, pane_active)
 
@@ -149,3 +150,13 @@ class TmuxSession:
         self._run_process(args)
         for window in self.windows:
             window.create_window()
+
+    def save_to_file(self, filename: str) -> None:
+        data = self.to_dict()
+        with open(filename, "w") as f:
+            json.dump(data, f)
+
+    def load_from_file(self, filename: str) -> None:
+        with open(filename, "r") as f:
+            session_dict = json.load(f)
+        self.load_from_dict(session_dict)

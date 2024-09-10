@@ -12,7 +12,7 @@ class TestTmuxPane(unittest.TestCase):
         except Exception as e:
             self.fail("TmuxPane creation failed: " + str(e))
         self.assertEqual(pane.id, 1)
-        self.assertEqual(pane.path, pathlib.Path().home())
+        self.assertEqual(pane.path, str(pathlib.Path().home()))
         self.assertFalse(pane.is_active)
 
 
@@ -102,6 +102,8 @@ class TestTmuxSession(unittest.TestCase):
                               "jmux_test"], stderr=subprocess.PIPE)
         if err.stderr:
             pass
+        if pathlib.Path("test_session.json").exists():
+            pathlib.Path("test_session.json").unlink()
 
     def create_test_session(self):
         subprocess.run(["tmux", "new-session", "-d",
@@ -146,3 +148,22 @@ class TestTmuxSession(unittest.TestCase):
         out = subprocess.run(["tmux", "list-sessions", "-F",
                               "#{session_name}"], capture_output=True)
         self.assertIn(session.name, out.stdout.decode("utf-8"))
+
+    def test_save_to_file(self):
+        self.create_test_session()
+        session = jmux.TmuxSession("jmux_test")
+        session.load_from_tmux()
+        session.save_to_file("test_session.json")
+        with open("test_session.json", "r") as f:
+            session_dict = f.read()
+        self.assertIn(session.name, session_dict)
+
+    def test_load_from_file(self):
+        self.create_test_session()
+        session = jmux.TmuxSession("jmux_test")
+        session.load_from_tmux()
+        session.save_to_file("test_session.json")
+        test_session = jmux.TmuxSession("test_session")
+        test_session.load_from_file("test_session.json")
+        self.assertTrue(test_session.windows)
+        self.assertEqual(test_session.windows[0].session, session.name)
