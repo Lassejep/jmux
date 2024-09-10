@@ -136,3 +136,12 @@ class TmuxSession:
             "name": self.name,
             "windows": [window.to_dict() for window in self.windows],
         }
+
+    def load_from_dict(self, session_dict: dict) -> None:
+        self.name = session_dict["name"]
+        for window_dict in session_dict["windows"]:
+            window = TmuxWindow(window_dict["session"], window_dict["name"])
+            window.layout = window_dict["layout"]
+            window.is_active = window_dict["is_active"]
+            window.load_panes_from_dict(window_dict["panes"])
+            self.windows.append(window)

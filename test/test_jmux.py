@@ -129,3 +129,13 @@ class TestTmuxSession(unittest.TestCase):
         session_dict = session.to_dict()
         self.assertEqual(session_dict["name"], "jmux_test")
         self.assertTrue(session_dict["windows"])
+
+    def test_load_from_dict(self):
+        self.create_test_session()
+        session = jmux.TmuxSession("jmux_test")
+        session.load_from_tmux()
+        session_dict = session.to_dict()
+        test_session = jmux.TmuxSession("jmux_test")
+        test_session.load_from_dict(session_dict)
+        self.assertTrue(test_session.windows)
+        self.assertEqual(test_session.windows[0].session, session.name)
