@@ -1,6 +1,6 @@
 import pathlib
 import subprocess
-from typing import Optional
+from typing import Optional, List
 from dataclasses import dataclass
 
 
@@ -15,7 +15,6 @@ class TmuxPane:
     id: int
     path: pathlib.Path = pathlib.Path().home()
     is_active: bool = False
-    processes: Optional[dict] = None
 
 
 class TmuxWindow:
@@ -24,7 +23,7 @@ class TmuxWindow:
         self.name: str = window_name
         self.layout: Optional[str] = None
         self.is_active: bool = False
-        self.panes: Optional[TmuxPane] = None
+        self.panes: List[TmuxPane] = []
 
     def _run_process(self, args: [str]) -> None:
         try:
@@ -99,7 +98,7 @@ class TmuxSession:
     def __init__(self, session_name: str) -> None:
         self.name: str = session_name
         self.id: Optional[str] = None
-        self.windows: Optional[TmuxWindow] = None
+        self.windows: List[TmuxWindow] = []
 
     def _run_process(self, args: [str]) -> None:
         try:
@@ -108,5 +107,34 @@ class TmuxSession:
         except subprocess.CalledProcessError as e:
             raise JmuxError(f"Failed to run process: {e}")
 
+    def _load_window_from_line(self, line: str) -> TmuxWindow:
+        if not line:
+            return
+        session, name, layout, active = line.split(":")
+        window = TmuxWindow(session, name)
+        window.layout = layout
+        window.is_active = active == "1"
+        window.load_panes_from_tmux()
+        return window
+
     def _load_windows_from_tmux(self) -> None:
-        pass
+        args = ["tmux", "list-windows", "-t", self.name, "-F",
+                "#{session_name}:#W:#{window_layout}:#{window_active}"]
+        tmux_windows = self._run_process(args)
+        for line in tmux_windows.split("\n"):
+            window = self._load_window_from_line(line)
+            self.windows.append(window)
+
+    def _parse_session_line(self, line: str) -> None:
+        if not line:
+            return
+        name, session_id = line.split(":")
+        if name == self.name:
+            self.id = session_id
+            self._load_windows_from_tmux()
+
+    def load_from_tmux(self) -> None:
+        args = ["tmux", "list-sessions", "-F", "#{session_name}:#{session_id}"]
+        tmux_sessions = self._run_process(args)
+        for line in tmux_sessions.split("\n"):
+            self._parse_session_line(line)

@@ -14,7 +14,6 @@ class TestTmuxPane(unittest.TestCase):
         self.assertEqual(pane.id, 1)
         self.assertEqual(pane.path, pathlib.Path().home())
         self.assertFalse(pane.is_active)
-        self.assertFalse(pane.processes)
 
 
 class TestTmuxWindow(unittest.TestCase):
@@ -45,11 +44,11 @@ class TestTmuxWindow(unittest.TestCase):
             "is_active": True,
             "panes": [
                 {"id": 1, "path": "/home/user",
-                    "is_active": True, "processes": None},
+                    "is_active": True},
                 {"id": 2, "path": "/home/user",
-                    "is_active": False, "processes": None},
+                    "is_active": False},
                 {"id": 3, "path": "/home/user",
-                    "is_active": False, "processes": None},
+                    "is_active": False},
             ],
         }
 
@@ -109,6 +108,16 @@ class TestTmuxSession(unittest.TestCase):
         if err.stderr:
             pass
 
+    def create_test_session(self):
+        subprocess.run(["tmux", "new-session", "-d",
+                       "-s", "jmux_test"], check=True)
+        out = subprocess.run(["tmux", "list-sessions", "-F",
+                             "#{session_name}:#{session_id}"],
+                             capture_output=True)
+        for line in out.stdout.decode("utf-8").split("\n"):
+            if "jmux_test" in line:
+                self.session_id = line.split(":")[1]
+
     def test_object_creation(self):
         try:
             session = jmux.TmuxSession("jmux_test")
@@ -116,3 +125,9 @@ class TestTmuxSession(unittest.TestCase):
             self.fail("TmuxSession creation failed: " + str(e))
         self.assertEqual(session.name, "jmux_test")
         self.assertFalse(session.windows)
+
+    def test_load_from_tmux(self):
+        self.create_test_session()
+        session = jmux.TmuxSession("jmux_test")
+        session.load_from_tmux()
+        self.assertTrue(session.windows)
