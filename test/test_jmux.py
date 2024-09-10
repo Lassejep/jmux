@@ -139,3 +139,10 @@ class TestTmuxSession(unittest.TestCase):
         test_session.load_from_dict(session_dict)
         self.assertTrue(test_session.windows)
         self.assertEqual(test_session.windows[0].session, session.name)
+
+    def test_create_session(self):
+        session = jmux.TmuxSession("jmux_test")
+        session.create_session()
+        out = subprocess.run(["tmux", "list-sessions", "-F",
+                              "#{session_name}"], capture_output=True)
+        self.assertIn(session.name, out.stdout.decode("utf-8"))

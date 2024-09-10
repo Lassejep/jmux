@@ -75,9 +75,7 @@ class TmuxWindow:
             return
         for pane in self.panes:
             args = ["tmux", "split-window", "-t",
-                    f"{self.session}:{self.name}"]
-            if pane.path:
-                args.extend(["-c", str(pane.path)])
+                    f"{self.session}:{self.name}", "-c", str(pane.path)]
             if not pane.is_active:
                 args.append("-d")
             self._run_process(args)
@@ -145,3 +143,9 @@ class TmuxSession:
             window.is_active = window_dict["is_active"]
             window.load_panes_from_dict(window_dict["panes"])
             self.windows.append(window)
+
+    def create_session(self) -> None:
+        args = ["tmux", "new-session", "-d", "-s", self.name]
+        self._run_process(args)
+        for window in self.windows:
+            window.create_window()
