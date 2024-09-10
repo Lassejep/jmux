@@ -18,8 +18,8 @@ class TmuxPane:
 
 
 class TmuxWindow:
-    def __init__(self, session_id: str, window_name: str) -> None:
-        self.session: str = session_id
+    def __init__(self, session_name: str, window_name: str) -> None:
+        self.session: str = session_name
         self.name: str = window_name
         self.layout: Optional[str] = None
         self.is_active: bool = False
@@ -97,7 +97,6 @@ class TmuxWindow:
 class TmuxSession:
     def __init__(self, session_name: str) -> None:
         self.name: str = session_name
-        self.id: Optional[str] = None
         self.windows: List[TmuxWindow] = []
 
     def _run_process(self, args: [str]) -> None:
@@ -108,8 +107,6 @@ class TmuxSession:
             raise JmuxError(f"Failed to run process: {e}")
 
     def _load_window_from_line(self, line: str) -> TmuxWindow:
-        if not line:
-            return
         session, name, layout, active = line.split(":")
         window = TmuxWindow(session, name)
         window.layout = layout
@@ -122,19 +119,20 @@ class TmuxSession:
                 "#{session_name}:#W:#{window_layout}:#{window_active}"]
         tmux_windows = self._run_process(args)
         for line in tmux_windows.split("\n"):
+            if not line:
+                return
             window = self._load_window_from_line(line)
             self.windows.append(window)
 
-    def _parse_session_line(self, line: str) -> None:
-        if not line:
-            return
-        name, session_id = line.split(":")
-        if name == self.name:
-            self.id = session_id
-            self._load_windows_from_tmux()
-
     def load_from_tmux(self) -> None:
-        args = ["tmux", "list-sessions", "-F", "#{session_name}:#{session_id}"]
-        tmux_sessions = self._run_process(args)
-        for line in tmux_sessions.split("\n"):
-            self._parse_session_line(line)
+        args = ["tmux", "list-sessions", "-F", "#{session_name}"]
+        tmux_session_names = self._run_process(args)
+        if self.name not in tmux_session_names:
+            raise JmuxError(f"Session {self.name} not found")
+        self._load_windows_from_tmux()
+
+    def to_dict(self) -> dict:
+        return {
+            "name": self.name,
+            "windows": [window.to_dict() for window in self.windows],
+        }
