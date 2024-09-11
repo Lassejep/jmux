@@ -1,169 +1,128 @@
 import unittest
-import pathlib
 import subprocess
+import json
 
-import jmux
-
-
-class TestTmuxPane(unittest.TestCase):
-    def test_object_creation(self):
-        try:
-            pane = jmux.TmuxPane(1)
-        except Exception as e:
-            self.fail("TmuxPane creation failed: " + str(e))
-        self.assertEqual(pane.id, 1)
-        self.assertEqual(pane.path, str(pathlib.Path().home()))
-        self.assertFalse(pane.is_active)
+from src.session_manager import TmuxManager, TmuxSession, TmuxWindow, TmuxPane
 
 
-class TestTmuxWindow(unittest.TestCase):
-    def setUp(self):
-        self.session_name = "jmux_test"
-        subprocess.run(["tmux", "new-session", "-d",
-                       "-s", self.session_name], check=True)
-        subprocess.run(["tmux", "rename-window", "-t",
-                       f"{self.session_name}:1", "1"], check=True)
-        subprocess.run(["tmux", "split-window", "-t",
-                       f"{self.session_name}:1", "-h"], check=True)
-        subprocess.run(["tmux", "split-window", "-t",
-                       f"{self.session_name}:1", "-v"], check=True)
-
-        out = subprocess.run(["tmux", "list-windows", "-t", "jmux_test",
-                              "-F", "#{window_name}"], capture_output=True)
-        self.window_name = out.stdout.decode("utf-8").strip()
-
-        self.window_dict = {
-            "session": self.session_name,
-            "name": "test_window",
-            "layout": "91ed,172x38,0,0{86x38,0,0,1,85x38,87,0[85x29,87,0,2,85x8,87,30,294]}",
-            "is_active": True,
-            "panes": [
-                {"id": 1, "path": "/home/user",
-                    "is_active": True},
-                {"id": 2, "path": "/home/user",
-                    "is_active": False},
-                {"id": 3, "path": "/home/user",
-                    "is_active": False},
-            ],
-        }
-
-    def tearDown(self):
-        subprocess.run(["tmux", "kill-session", "-t", "jmux_test"], check=True)
-
-    def test_object_creation(self):
-        try:
-            window = jmux.TmuxWindow(self.session_name, self.window_name)
-        except Exception as e:
-            self.fail("TmuxWindow creation failed: " + str(e))
-        self.assertEqual(window.session, self.session_name)
-        self.assertEqual(window.name, self.window_name)
-        self.assertFalse(window.layout)
-        self.assertFalse(window.is_active)
-        self.assertFalse(window.panes)
-
-    def test_load_panes_from_tmux(self):
-        window = jmux.TmuxWindow(self.session_name, self.window_name)
-        window.load_panes_from_tmux()
-        self.assertEqual(len(window.panes), 3)
-
-    def test_to_dict(self):
-        window = jmux.TmuxWindow(self.session_name, self.window_name)
-        window.load_panes_from_tmux()
-        window_dict = window.to_dict()
-        self.assertEqual(window_dict["name"], self.window_name)
-        self.assertEqual(window_dict["panes"][0]["id"], 1)
-
-    def test_load_panes_from_dict(self):
-        window = jmux.TmuxWindow(self.session_name, self.window_name)
-        window.load_panes_from_tmux()
-        window_dict = window.to_dict()
-        window = jmux.TmuxWindow(self.session_name, self.window_name)
-        window.load_panes_from_dict(window_dict["panes"])
-        self.assertEqual(len(window.panes), 3)
-        self.assertEqual(window.panes[0].id, 1)
-
-    def test_create_window(self):
-        window = jmux.TmuxWindow(self.window_dict["session"],
-                                 self.window_dict["name"])
-        window.load_panes_from_dict(self.window_dict["panes"])
-        window.create_window()
-        out = subprocess.run(["tmux", "list-windows", "-t",
-                              "jmux_test", "-F", "#{window_name}"],
-                             capture_output=True)
-        self.assertIn(window.name, out.stdout.decode("utf-8"))
-
-
-class TestTmuxSession(unittest.TestCase):
+class TestTmuxManager(unittest.TestCase):
     def setUp(self):
         pass
 
     def tearDown(self):
-        err = subprocess.run(["tmux", "kill-session", "-t",
-                              "jmux_test"], stderr=subprocess.PIPE)
-        if err.stderr:
+        try:
+            subprocess.run(["tmux", "kill-session", "-t", "test_session"],
+                           check=True, stdout=subprocess.PIPE,
+                           stderr=subprocess.PIPE)
+        except subprocess.CalledProcessError:
             pass
-        if pathlib.Path("test_session.json").exists():
-            pathlib.Path("test_session.json").unlink()
 
     def create_test_session(self):
         subprocess.run(["tmux", "new-session", "-d",
-                       "-s", "jmux_test"], check=True)
+                       "-s", "test_session"], check=True)
+        subprocess.run(["tmux", "rename-window", "-t",
+                       "test_session:1", "test_window1"], check=True)
+        subprocess.run(["tmux", "new-window", "-t",
+                       "test_session", "-n", "test_window2"], check=True)
+        subprocess.run(["tmux", "new-window", "-t",
+                       "test_session", "-n", "test_window2"], check=True)
+        subprocess.run(["tmux", "split-window", "-h",
+                       "-t", "test_session:1", "-c", "/tmp"], check=True)
+        subprocess.run(["tmux", "split-window", "-v",
+                       "-t", "test_session:1.1"], check=True)
+        subprocess.run(["tmux", "split-window", "-v",
+                       "-t", "test_session:2.1"], check=True)
 
-    def test_object_creation(self):
+    def test_get_current_session(self):
+        self.create_test_session()
+        tm = TmuxManager()
         try:
-            session = jmux.TmuxSession("jmux_test")
-        except Exception as e:
-            self.fail("TmuxSession creation failed: " + str(e))
-        self.assertEqual(session.name, "jmux_test")
-        self.assertFalse(session.windows)
-
-    def test_load_from_tmux(self):
-        self.create_test_session()
-        session = jmux.TmuxSession("jmux_test")
-        session.load_from_tmux()
-        self.assertTrue(session.windows)
-        self.assertEqual(session.windows[0].session, session.name)
-
-    def test_to_dict(self):
-        self.create_test_session()
-        session = jmux.TmuxSession("jmux_test")
-        session.load_from_tmux()
-        session_dict = session.to_dict()
-        self.assertEqual(session_dict["name"], "jmux_test")
-        self.assertTrue(session_dict["windows"])
-
-    def test_load_from_dict(self):
-        self.create_test_session()
-        session = jmux.TmuxSession("jmux_test")
-        session.load_from_tmux()
-        session_dict = session.to_dict()
-        test_session = jmux.TmuxSession("jmux_test")
-        test_session.load_from_dict(session_dict)
-        self.assertTrue(test_session.windows)
-        self.assertEqual(test_session.windows[0].session, session.name)
+            session = tm._get_session("test_session")
+        except Exception:
+            self.fail("Failed to get current session")
+        self.assertEqual(session.name, "test_session")
+        self.assertEqual(len(session.windows), 3)
+        self.assertEqual(session.windows[0].name, "test_window1")
+        self.assertEqual(len(session.windows[0].panes), 3)
+        self.assertEqual(session.windows[1].name, "test_window2")
+        self.assertEqual(len(session.windows[1].panes), 2)
+        self.assertEqual(session.windows[2].name, "test_window2")
+        self.assertEqual(len(session.windows[2].panes), 1)
 
     def test_create_session(self):
-        session = jmux.TmuxSession("jmux_test")
-        session.create_session()
-        out = subprocess.run(["tmux", "list-sessions", "-F",
-                              "#{session_name}"], capture_output=True)
-        self.assertIn(session.name, out.stdout.decode("utf-8"))
+        panes = [
+            TmuxPane(1, "/tmp", True),
+            TmuxPane(2, "/tmp", False),
+            TmuxPane(3, "/tmp", False),
+        ]
+        window1 = TmuxWindow(1, "test_window1", True, "tiled", panes)
+        panes = [
+            TmuxPane(1, "/tmp", True),
+            TmuxPane(2, "/tmp", False),
+        ]
+        window2 = TmuxWindow(2, "test_window2", False, "tiled", panes)
+        panes = [
+            TmuxPane(1, "/tmp", True),
+        ]
+        window3 = TmuxWindow(3, "test_window2", False, "tiled", panes)
+        session = TmuxSession("test_session", [window1, window2, window3])
+        tm = TmuxManager()
+        tm.create_session(session)
+        sessions = subprocess.check_output(["tmux", "list-sessions"],
+                                           text=True).strip()
+        self.assertIn("test_session", sessions)
+        windows = subprocess.check_output(["tmux", "list-windows", "-t",
+                                          "test_session"], text=True).strip()
+        self.assertIn("test_window1", windows)
+        self.assertIn("test_window2", windows)
+        self.assertEqual(windows.count("\n") + 1, 3)
+        panes = subprocess.check_output(["tmux", "list-panes", "-t",
+                                        "test_session:1"], text=True).strip()
+        self.assertEqual(panes.count("\n") + 1, 3)
+        panes = subprocess.check_output(["tmux", "list-panes", "-t",
+                                        "test_session:2"], text=True).strip()
+        self.assertEqual(panes.count("\n") + 1, 2)
+        panes = subprocess.check_output(["tmux", "list-panes", "-t",
+                                        "test_session:3"], text=True).strip()
+        self.assertEqual(panes.count("\n") + 1, 1)
 
-    def test_save_to_file(self):
-        self.create_test_session()
-        session = jmux.TmuxSession("jmux_test")
-        session.load_from_tmux()
-        session.save_to_file("test_session.json")
-        with open("test_session.json", "r") as f:
-            session_dict = f.read()
-        self.assertIn(session.name, session_dict)
+    def test_save_session(self):
+        panes = [
+            TmuxPane(1, "/tmp", True),
+            TmuxPane(2, "/tmp", False),
+            TmuxPane(3, "/tmp", False),
+        ]
+        window1 = TmuxWindow(1, "test_window1", True, "tiled", panes)
+        panes = [
+            TmuxPane(1, "/tmp", True),
+            TmuxPane(2, "/tmp", False),
+        ]
+        window2 = TmuxWindow(2, "test_window2", False, "tiled", panes)
+        panes = [
+            TmuxPane(1, "/tmp", True),
+        ]
+        window3 = TmuxWindow(3, "test_window2", False, "tiled", panes)
+        session = TmuxSession("test_session", [window1, window2, window3])
+        tm = TmuxManager()
+        tm.save_session(session)
+        session_file = tm._sessions_dir / "test_session.json"
+        if not session_file.exists():
+            self.fail("Failed to save session")
+        with session_file.open() as f:
+            saved_session = json.load(f)
+        self.assertEqual(saved_session["name"], "test_session")
+        self.assertEqual(len(saved_session["windows"]), 3)
+        self.assertEqual(saved_session["windows"][0]["name"], "test_window1")
+        self.assertEqual(saved_session["windows"][0]["is_active"], True)
 
-    def test_load_from_file(self):
-        self.create_test_session()
-        session = jmux.TmuxSession("jmux_test")
-        session.load_from_tmux()
-        session.save_to_file("test_session.json")
-        test_session = jmux.TmuxSession("test_session")
-        test_session.load_from_file("test_session.json")
-        self.assertTrue(test_session.windows)
-        self.assertEqual(test_session.windows[0].session, session.name)
+    def test_load_session(self):
+        tm = TmuxManager()
+        session = tm.load_session("test_session")
+        self.assertEqual(session.name, "test_session")
+        self.assertEqual(len(session.windows), 3)
+        self.assertEqual(session.windows[0].name, "test_window1")
+        self.assertEqual(len(session.windows[0].panes), 3)
+        self.assertEqual(session.windows[1].name, "test_window2")
+        self.assertEqual(len(session.windows[1].panes), 2)
+        self.assertEqual(session.windows[2].name, "test_window2")
+        self.assertEqual(len(session.windows[2].panes), 1)
