@@ -74,46 +74,69 @@ class TestTmuxBinMethods(unittest.TestCase):
 class TestJmuxPaneMethods(unittest.TestCase):
     def setUp(self):
         create_test_session()
-        self.TEST_SESSION_NAME = "test_session"
-        self.TEST_WINDOW_INDEX = 1
-        self.TEST_PANE_INDEX = 2
-        self.TEST_PANE_PATH = "/tmp"
-        self.pane = JmuxPane(self.TEST_PANE_INDEX, self.TEST_PANE_PATH, True)
+        self.TMUX_SESSION_NAME = "test_session"
+        self.TMUX_WINDOW_INDEX = 1
+        self.TMUX_PANE_INDEX = 2
+        self.TMUX_PANE_PATH = "/tmp"
+        self.TEST_PANE_INDEX = 4
+        self.pane = JmuxPane(self.TEST_PANE_INDEX, self.TMUX_PANE_PATH, True)
 
     def tearDown(self):
         kill_test_session()
 
     def test_build_from_tmux_returns_jmux_pane(self):
-        pane = JmuxPane.build_from_tmux(self.TEST_SESSION_NAME,
-                                        self.TEST_WINDOW_INDEX,
-                                        self.TEST_PANE_INDEX)
+        pane = JmuxPane.build_from_tmux(self.TMUX_SESSION_NAME,
+                                        self.TMUX_WINDOW_INDEX,
+                                        self.TMUX_PANE_INDEX)
         self.assertEqual(type(pane), JmuxPane)
 
     def test_build_from_tmux_correct_index(self):
-        pane = JmuxPane.build_from_tmux(self.TEST_SESSION_NAME,
-                                        self.TEST_WINDOW_INDEX,
-                                        self.TEST_PANE_INDEX)
-        self.assertEqual(pane.id, self.TEST_PANE_INDEX)
+        pane = JmuxPane.build_from_tmux(self.TMUX_SESSION_NAME,
+                                        self.TMUX_WINDOW_INDEX,
+                                        self.TMUX_PANE_INDEX)
+        self.assertEqual(pane.id, self.TMUX_PANE_INDEX)
 
     def test_build_from_tmux_correct_path(self):
-        pane = JmuxPane.build_from_tmux(self.TEST_SESSION_NAME,
-                                        self.TEST_WINDOW_INDEX,
-                                        self.TEST_PANE_INDEX)
-        self.assertEqual(pane.path, self.TEST_PANE_PATH)
+        pane = JmuxPane.build_from_tmux(self.TMUX_SESSION_NAME,
+                                        self.TMUX_WINDOW_INDEX,
+                                        self.TMUX_PANE_INDEX)
+        self.assertEqual(pane.path, self.TMUX_PANE_PATH)
 
     def test_build_from_tmux_correct_active_state(self):
-        pane = JmuxPane.build_from_tmux(self.TEST_SESSION_NAME,
-                                        self.TEST_WINDOW_INDEX,
-                                        self.TEST_PANE_INDEX)
+        pane = JmuxPane.build_from_tmux(self.TMUX_SESSION_NAME,
+                                        self.TMUX_WINDOW_INDEX,
+                                        self.TMUX_PANE_INDEX)
         self.assertTrue(pane.is_active)
 
     def test_create_in_tmux_creates_new_tmux_pane(self):
-        PANE_INDEX = 4
-        pane = JmuxPane(PANE_INDEX, self.TEST_PANE_PATH, False)
-        pane.create_in_tmux(self.TEST_SESSION_NAME, self.TEST_WINDOW_INDEX)
+        self.pane.create_in_tmux(
+            self.TMUX_SESSION_NAME, self.TMUX_WINDOW_INDEX)
         panes = subprocess.check_output(
             ["tmux", "list-panes", "-t",
-             f"{self.TEST_SESSION_NAME}:{self.TEST_WINDOW_INDEX}",
+             f"{self.TMUX_SESSION_NAME}:{self.TMUX_WINDOW_INDEX}",
              "-F", "#{pane_index}"], text=True
         ).strip()
-        self.assertIn(str(PANE_INDEX), panes)
+        self.assertIn(str(self.TEST_PANE_INDEX), panes)
+
+    def test_create_in_tmux_sets_correct_path(self):
+        self.pane.create_in_tmux(
+            self.TMUX_SESSION_NAME, self.TMUX_WINDOW_INDEX)
+        path = subprocess.check_output(
+            ["tmux", "display-message", "-t",
+             f"{self.TMUX_SESSION_NAME}:{
+                 self.TMUX_WINDOW_INDEX}.{self.TEST_PANE_INDEX}",
+             "-p", "#{pane_current_path}"], text=True
+        ).strip()
+        self.assertEqual(path, self.pane.path)
+
+    def test_create_in_tmux_sets_correct_active_state(self):
+        self.pane.create_in_tmux(
+            self.TMUX_SESSION_NAME, self.TMUX_WINDOW_INDEX)
+        active = subprocess.check_output(
+            ["tmux", "display-message", "-t",
+             f"{self.TMUX_SESSION_NAME}:{
+                 self.TMUX_WINDOW_INDEX}.{self.TEST_PANE_INDEX}",
+             "-p", "#{pane_active}"], text=True
+        ).strip()
+        active = active == "1"
+        self.assertEqual(active, self.pane.is_active)

@@ -99,7 +99,8 @@ class JmuxPane(IJmuxElement):
                 TMUX.run(focus_cmd)
         else:
             cmd = ["splitw", "-t",
-                   f"{session_name}:{window_index}", "-c", self.path]
+                   f"{session_name}:{window_index}.{self.id - 1}",
+                   "-c", self.path]
             if not self.is_active:
                 cmd.append("-d")
             TMUX.run(cmd)
