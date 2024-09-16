@@ -45,21 +45,22 @@ class TmuxBin():
             return output[0]
         return output
 
-    # FIXME: This method is unreliable and fails sometimes
     def send_keys(self, keys: str | List[str], target: str) -> None:
         if type(keys) is not list:
             keys = [keys]
-        cmd = ["send-keys", "-t", target, *keys, "C-m"]
-        wait_cmd = ["send-keys", "-t", target, self.tmux_bin,
-                    " wait-for", " -S", " jmux_ready", "C-m"]
+        wait_cmd = f"; {self.tmux_bin} wait-for -S jmux_ready"
+        cmd = ["send-keys", "-t", target, *keys, "C-m", wait_cmd, "C-m"]
         confirm_cmd = [self.tmux_bin, "wait-for", "jmux_ready"]
         try:
+            confirm_proc = subprocess.Popen(confirm_cmd)
             self.run(cmd)
         except JmuxError:
+            confirm_proc.kill()
             raise JmuxError("Failed to send keys" + keys)
-        proc = subprocess.Popen(confirm_cmd)
-        self.run(wait_cmd)
-        proc.wait(timeout=5)
+        try:
+            confirm_proc.wait(timeout=2)
+        except subprocess.TimeoutExpired:
+            confirm_proc.kill()
 
 
 TMUX = TmuxBin()
@@ -126,12 +127,11 @@ class JmuxWindow(IJmuxElement):
         if type(self.panes[0]) is dict:
             self.panes = [JmuxPane(**pane) for pane in self.panes]
 
-    def build_from_tmux(self, session_name: str, window_index: int) -> Self:
+    def build_from_tmux(session_name: str, window_index: int) -> Self:
         keys = ["window_name", "window_active",
                 "window_layout", "window_panes"]
         target = f"{session_name}:{window_index}"
-        window_name, is_active, layout, window_panes = self.tmux.get(
-            keys, target)
+        window_name, is_active, layout, window_panes = TMUX.get(keys, target)
         panes = []
         for pane_index in range(1, int(window_panes) + 1):
             panes.append(JmuxPane.build_from_tmux(
@@ -144,12 +144,12 @@ class JmuxWindow(IJmuxElement):
                "-k", "-n", self.name]
         if not self.is_active:
             cmd.append("-d")
-        self.tmux.run(cmd)
+        TMUX.run(cmd)
         for pane in self.panes:
-            pane.create_in_tmux(session_name, self.id, pane)
+            pane.create_in_tmux(session_name, self.id)
         cmd = ["select-layout", "-t",
                f"{session_name}:{self.id}", self.layout]
-        self.tmux.run(cmd)
+        TMUX.run(cmd)
 
 
 @dataclass
@@ -161,10 +161,10 @@ class JmuxSession(IJmuxElement):
         if type(self.windows[0]) is dict:
             self.windows = [JmuxWindow(**window) for window in self.windows]
 
-    def build_from_tmux(self, session_name: str) -> Self:
+    def build_from_tmux(session_name: str) -> Self:
         keys = ["session_windows"]
         target = f"{session_name}"
-        session_windows = self.tmux.get(keys, target)
+        session_windows = TMUX.get(keys, target)
         windows = []
         for window_index in range(1, int(session_windows) + 1):
             windows.append(JmuxWindow.build_from_tmux(
@@ -173,9 +173,9 @@ class JmuxSession(IJmuxElement):
 
     def create_in_tmux(self) -> None:
         cmd = ["new-session", "-d", "-s", self.name]
-        self.tmux.run(cmd)
+        TMUX.run(cmd)
         for window in self.windows:
-            window.create_in_tmux(self.name, window)
+            window.create_in_tmux(self.name)
 
 
 class TmuxManager:
