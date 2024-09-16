@@ -7,8 +7,7 @@ from src import session_manager
 def main(args):
     tm = session_manager.TmuxManager()
     if args.run == "save":
-        sess = tm.get_current_session()
-        tm.save_session(sess)
+        tm.save_current_session()
     elif args.run == "load":
         session_name = input("Enter session name: ")
         tm.load_session(session_name)
