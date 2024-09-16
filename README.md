@@ -32,7 +32,8 @@ jmux list
 - Tmux 3.4 or newer
 
 ## TODO
-- [ ] Fix the bug where the bug where the send-keys func is inconsistent
+- [ ] Fix bug where the send-keys function is inconsistent
+- [ ] Fix bug where new panes created clear
 - [ ] Add the ability to delete saved sessions
 - [ ] Add the ability to rename saved sessions
 - [ ] Create a small GUI for the program
