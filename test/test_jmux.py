@@ -1,8 +1,9 @@
 import unittest
 import subprocess
+import pathlib
 
-from src.session_manager import JmuxError
 from src.session_manager import TmuxBin, JmuxPane, JmuxWindow, JmuxSession
+from src.session_manager import TmuxManager
 
 
 def create_test_session():
@@ -283,6 +284,53 @@ class TestJmuxSessionMethods(unittest.TestCase):
              "-F", "#{window_index}"], text=True
         ).strip().split("\n")
         self.assertEqual(len(windows), len(self.session.windows))
+
+
+class TestTmuxManagerMethods(unittest.TestCase):
+    def setUp(self):
+        create_test_session()
+        self.TMUX_SESSION_NAME = "test_session"
+        self.TEST_SESSION_NAME = "test_session2"
+        self.TEST_SESSION_WINDOWS = 3
+        self.test_window1 = JmuxWindow(
+            1, "test_window1", True,
+            "3455,172x38,0,0{106x38,0,0,113,65x38,107,0,1936}",
+            [JmuxPane(1, "/tmp", True)]
+        )
+        self.test_window2 = JmuxWindow(
+            2, "test_window2", False,
+            "3455,172x38,0,0{106x38,0,0,113,65x38,107,0,1936}",
+            [JmuxPane(1, "/tmp", True)]
+        )
+        self.test_window3 = JmuxWindow(
+            3, "test_window3", False,
+            "3455,172x38,0,0{106x38,0,0,113,65x38,107,0,1936}",
+            [JmuxPane(1, "/tmp", True)]
+        )
+        self.session = JmuxSession(self.TEST_SESSION_NAME,
+                                   [self.test_window1, self.test_window2,
+                                    self.test_window3])
+        self.manager = TmuxManager()
+        self.session_path = pathlib.Path().home() / ".config" / "jmux" / \
+            f"{self.TEST_SESSION_NAME}.json"
+
+    def tearDown(self):
+        kill_session("test_session")
+        kill_session("test_session2")
+        if self.session_path.exists():
+            self.session_path.unlink()
+
+    def test_save_session(self):
+        self.manager.save_session(self.session)
+        self.assertTrue(self.session_path.exists())
+
+    def test_load_session(self):
+        self.manager.save_session(self.session)
+        loaded_session = self.manager.load_session(self.TEST_SESSION_NAME)
+        self.assertEqual(loaded_session.name, self.TEST_SESSION_NAME)
+        self.assertEqual(loaded_session.windows[0].name, "test_window1")
+        self.assertEqual(loaded_session.windows[1].name, "test_window2")
+        self.assertEqual(loaded_session.windows[2].name, "test_window3")
 
 
 if __name__ == "__main__":

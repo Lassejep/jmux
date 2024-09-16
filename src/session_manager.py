@@ -180,7 +180,6 @@ class JmuxSession(IJmuxElement):
 
 class TmuxManager:
     def __init__(self) -> None:
-        self.tmux = TmuxBin()
         self._sessions_dir = pathlib.Path().home() / ".config" / "jmux"
         if not self._sessions_dir.exists():
             self._sessions_dir.mkdir()
@@ -196,7 +195,7 @@ class TmuxManager:
         return session
 
     def get_current_session(self) -> JmuxSession:
-        session_name = self.tmux.get("session_name")
+        session_name = TMUX.get("session_name")
         return JmuxSession.build_from_tmux(session_name)
 
     def save_current_session(self) -> None:
