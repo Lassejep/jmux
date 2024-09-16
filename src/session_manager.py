@@ -49,7 +49,7 @@ class TmuxBin():
         if type(keys) is not list:
             keys = [keys]
         wait_cmd = f"; {self.tmux_bin} wait-for -S jmux_ready"
-        cmd = ["send-keys", "-t", target, *keys, "C-m", wait_cmd, "C-m"]
+        cmd = ["send-keys", "-t", target, *keys, wait_cmd, "C-m", "C-l"]
         confirm_cmd = [self.tmux_bin, "wait-for", "jmux_ready"]
         try:
             confirm_proc = subprocess.Popen(confirm_cmd)
@@ -201,3 +201,6 @@ class TmuxManager:
     def save_current_session(self) -> None:
         session = self.get_current_session()
         self.save_session(session)
+
+    def list_sessions(self) -> List[str]:
+        return [str(session.stem) for session in self._sessions_dir.iterdir()]

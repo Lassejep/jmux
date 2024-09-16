@@ -332,6 +332,11 @@ class TestTmuxManagerMethods(unittest.TestCase):
         self.assertEqual(loaded_session.windows[1].name, "test_window2")
         self.assertEqual(loaded_session.windows[2].name, "test_window3")
 
+    def test_list_sessions(self):
+        self.manager.save_session(self.session)
+        sessions = self.manager.list_sessions()
+        self.assertIn(self.TEST_SESSION_NAME, sessions)
+
 
 if __name__ == "__main__":
     unittest.main()
