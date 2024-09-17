@@ -2,8 +2,9 @@ import unittest
 import subprocess
 import pathlib
 
-from src.session_manager import TmuxBin, JmuxPane, JmuxWindow, JmuxSession
+from src.tmuxapi import TmuxBin
 from src.session_manager import TmuxManager
+from src.elements import JmuxPane, JmuxWindow, JmuxSession
 
 
 def create_test_session():
