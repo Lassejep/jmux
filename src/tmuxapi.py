@@ -1,10 +1,111 @@
 import subprocess
+import abc
 from typing import List
 
 
-class TmuxBin():
-    def __init__(self) -> None:
-        self.tmux_bin = self._find_tmux_bin()
+class TerminalMultiplexerAPI(abc.ABC):
+    @abc.abstractmethod
+    def get(self, key: str, target: str = "") -> str:
+        """
+        Get the value of a `key` from the `target` pane, window, or session.
+        """
+        pass
+
+    @abc.abstractmethod
+    def send_cmd(self, command: str, target: str) -> str:
+        """
+        Send a `command` to the `target` pane, window, or session.
+        Returns the output of the `command`.
+        """
+        pass
+
+    @abc.abstractmethod
+    def create_session(self, session_name: str) -> None:
+        """
+        Create a new session with the name `session_name`.
+        """
+        pass
+
+    @abc.abstractmethod
+    def create_window(self, window_name: str, session_name: str) -> None:
+        """
+        Create a new window with the name `window_name`,
+        in a session with the name `session_name`.
+        """
+        pass
+
+    @abc.abstractmethod
+    def create_pane(self, target: str) -> None:
+        """
+        Create a new pane in the `target` window.
+        """
+        pass
+
+    @abc.abstractmethod
+    def focus_session(self, target: str) -> None:
+        """
+        Focus on the `target` session.
+        """
+        pass
+
+    @abc.abstractmethod
+    def focus_window(self, target: str) -> None:
+        """
+        Focus on the `target` window.
+        """
+        pass
+
+    @abc.abstractmethod
+    def focus_pane(self, target: str) -> None:
+        """
+        Focus on the `target` pane.
+        """
+        pass
+
+    @abc.abstractmethod
+    def kill_session(self, target: str) -> None:
+        """
+        Kill the `target` session.
+        """
+        pass
+
+    @abc.abstractmethod
+    def kill_window(self, target: str) -> None:
+        """
+        Kill the `target` window.
+        """
+        pass
+
+    @abc.abstractmethod
+    def kill_pane(self, target: str) -> None:
+        """
+        Kill the `target` pane.
+        """
+        pass
+
+    @abc.abstractmethod
+    def change_window_layout(self, layout: str, target: str) -> None:
+        """
+        Change the `layout` of the `target` window.
+        """
+        pass
+
+    @abc.abstractmethod
+    def change_pane_directory(self, directory: str, target: str) -> None:
+        """
+        Change the current `directory` of the `target` pane.
+        """
+        pass
+
+
+class TmuxApi(TerminalMultiplexerApi):
+    _instance = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(TmuxApi, cls).__new__(cls)
+            cls._instance.tmux_bin = cls._instance._find_tmux_bin()
+        return cls._instance
 
     class TmuxError(Exception):
         def __init__(self, message: str) -> None:
@@ -61,6 +162,3 @@ class TmuxBin():
             confirm_proc.wait(timeout=2)
         except subprocess.TimeoutExpired:
             confirm_proc.kill()
-
-
-TMUX = TmuxBin()
