@@ -1,9 +1,13 @@
-import subprocess
 import abc
-from typing import List
+from typing import Optional
 
 
 class TerminalMultiplexerAPI(abc.ABC):
+    """
+    Abstract class for a terminal multiplexer API.
+    Responsible for communicating with the terminal multiplexer.
+    """
+
     @abc.abstractmethod
     def get(self, key: str, target: str = "") -> str:
         """
@@ -42,44 +46,16 @@ class TerminalMultiplexerAPI(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def focus_session(self, target: str) -> None:
+    def focus_element(self, target: str) -> None:
         """
         Focus on the `target` session.
         """
         pass
 
     @abc.abstractmethod
-    def focus_window(self, target: str) -> None:
-        """
-        Focus on the `target` window.
-        """
-        pass
-
-    @abc.abstractmethod
-    def focus_pane(self, target: str) -> None:
-        """
-        Focus on the `target` pane.
-        """
-        pass
-
-    @abc.abstractmethod
-    def kill_session(self, target: str) -> None:
+    def kill_element(self, target: str) -> None:
         """
         Kill the `target` session.
-        """
-        pass
-
-    @abc.abstractmethod
-    def kill_window(self, target: str) -> None:
-        """
-        Kill the `target` window.
-        """
-        pass
-
-    @abc.abstractmethod
-    def kill_pane(self, target: str) -> None:
-        """
-        Kill the `target` pane.
         """
         pass
 
@@ -98,67 +74,62 @@ class TerminalMultiplexerAPI(abc.ABC):
         pass
 
 
-class TmuxApi(TerminalMultiplexerApi):
-    _instance = None
+class TmuxAPI(TerminalMultiplexerAPI):
+    """
+    Implementation of the TerminalMultiplexerAPI
+    for the Tmux terminal multiplexer.
+    """
 
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super(TmuxApi, cls).__new__(cls)
-            cls._instance.tmux_bin = cls._instance._find_tmux_bin()
-        return cls._instance
+    def __init__(self, shell) -> None:
+        self.shell = shell
 
-    class TmuxError(Exception):
-        def __init__(self, message: str) -> None:
-            self.message = message
-            super().__init__(self.message)
+    def get(self, keys: list[str],
+            target: Optional[str] = None) -> dict[str, str]:
+        """
+        Get the values of `keys` from the `target` pane, window, or session.
+        """
+        formatted_keys = self._format_keys(keys)
+        command = ["tmux", "display-message",
+                   "-t", target, "-p", formatted_keys]
+        response = self.shell.run(command, capture_output=True).stdout
+        return self._format_response(keys, response)
 
-    class TmuxNotFoundError(TmuxError):
-        def __init__(self, message: str) -> None:
-            self.message = message
-            super().__init__(self.message)
+    def _format_keys(self, keys: list[str]) -> str:
+        if not keys:
+            raise ValueError("Keys cannot be empty")
+        keys = [f"#{{{key}}}" for key in keys]
+        return "".join(keys)
 
-    def run(self, cmd: List[str]) -> str:
-        try:
-            cmd.insert(0, self.tmux_bin)
-            return subprocess.check_output(cmd, text=True).strip()
-        except subprocess.CalledProcessError as err:
-            raise self.TmuxError(f"Failed to run {err}")
+    def _format_response(self, keys: list[str],
+                         response: str) -> dict[str, str]:
+        if response == "":
+            raise ValueError("Invalid key")
+        response = response.split(":")
+        for i, value in enumerate(response):
+            if value == "":
+                raise ValueError(f"Invalid key: {keys[i]}")
+        return dict(zip(keys, response))
 
-    def _find_tmux_bin(self) -> str:
-        try:
-            return subprocess.check_output(["which", "tmux"],
-                                           text=True).strip()
-        except subprocess.CalledProcessError as err:
-            raise self.TmuxNotFoundError("Tmux not found") from err
+    def send_cmd(self, command: str, target: str) -> str:
+        pass
 
-    def get(self, keys: str | List[str], target: str = "") -> str:
-        cmd = ["display-message"]
-        if target:
-            cmd.extend(["-t", target])
-        if type(keys) is not list:
-            keys = [keys]
-        keystr = ""
-        for key in keys:
-            keystr += f"#{{{key}}}:"
-        cmd.extend(["-p", f"{keystr[:-1]}"])
-        output = self.run(cmd).split(":")
-        if len(output) == 1:
-            return output[0]
-        return output
+    def create_session(self, session_name: str) -> None:
+        pass
 
-    def send_keys(self, keys: str | List[str], target: str) -> None:
-        if type(keys) is not list:
-            keys = [keys]
-        wait_cmd = f"; {self.tmux_bin} wait-for -S jmux_ready"
-        cmd = ["send-keys", "-t", target, *keys, wait_cmd, "C-m", "C-l"]
-        confirm_cmd = [self.tmux_bin, "wait-for", "jmux_ready"]
-        try:
-            confirm_proc = subprocess.Popen(confirm_cmd)
-            self.run(cmd)
-        except self.TmuxError:
-            confirm_proc.kill()
-            raise self.TmuxError("Failed to send keys" + keys)
-        try:
-            confirm_proc.wait(timeout=2)
-        except subprocess.TimeoutExpired:
-            confirm_proc.kill()
+    def create_window(self, window_name: str, session_name: str) -> None:
+        pass
+
+    def create_pane(self, target: str) -> None:
+        pass
+
+    def focus_element(self, target: str) -> None:
+        pass
+
+    def kill_element(self, target: str) -> None:
+        pass
+
+    def change_window_layout(self, layout: str, target: str) -> None:
+        pass
+
+    def change_pane_directory(self, directory: str, target: str) -> None:
+        pass
