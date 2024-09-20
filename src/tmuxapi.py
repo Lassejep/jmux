@@ -10,67 +10,34 @@ class TerminalMultiplexerAPI(abc.ABC):
 
     @abc.abstractmethod
     def get(self, key: str, target: str = "") -> str:
-        """
-        Get the value of a `key` from the `target` pane, window, or session.
-        """
-        pass
-
-    @abc.abstractmethod
-    def send_cmd(self, command: str, target: str) -> str:
-        """
-        Send a `command` to the `target` pane, window, or session.
-        Returns the output of the `command`.
-        """
         pass
 
     @abc.abstractmethod
     def create_session(self, session_name: str) -> None:
-        """
-        Create a new session with the name `session_name`.
-        """
         pass
 
     @abc.abstractmethod
-    def create_window(self, window_name: str, session_name: str) -> None:
-        """
-        Create a new window with the name `window_name`,
-        in a session with the name `session_name`.
-        """
+    def create_window(self, window_name: str, target: str) -> None:
         pass
 
     @abc.abstractmethod
     def create_pane(self, target: str) -> None:
-        """
-        Create a new pane in the `target` window.
-        """
         pass
 
     @abc.abstractmethod
     def focus_element(self, target: str) -> None:
-        """
-        Focus on the `target` session.
-        """
         pass
 
     @abc.abstractmethod
     def kill_element(self, target: str) -> None:
-        """
-        Kill the `target` session.
-        """
         pass
 
     @abc.abstractmethod
     def change_window_layout(self, layout: str, target: str) -> None:
-        """
-        Change the `layout` of the `target` window.
-        """
         pass
 
     @abc.abstractmethod
     def change_pane_directory(self, directory: str, target: str) -> None:
-        """
-        Change the current `directory` of the `target` pane.
-        """
         pass
 
 
@@ -110,13 +77,22 @@ class TmuxAPI(TerminalMultiplexerAPI):
                 raise ValueError(f"Invalid key: {keys[i]}")
         return dict(zip(keys, response))
 
-    def send_cmd(self, command: str, target: str) -> str:
-        pass
-
     def create_session(self, session_name: str) -> None:
-        pass
+        """
+        Create a new session with the name `session_name`.
+        """
+        if not self._is_valid_name(session_name):
+            raise ValueError("Session name cannot be empty")
+        command = ["tmux", "new-session", "-d", "-s", session_name]
+        self.shell.run(command)
 
-    def create_window(self, window_name: str, session_name: str) -> None:
+    def _is_valid_name(self, name: str) -> bool:
+        illegal_chars = [".", ":", "\t", "\n"]
+        if name.isspace() or not name:
+            return False
+        return all(char not in name for char in illegal_chars)
+
+    def create_window(self, window_name: str, target: str) -> None:
         pass
 
     def create_pane(self, target: str) -> None:
