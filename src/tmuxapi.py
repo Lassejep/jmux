@@ -86,12 +86,6 @@ class TmuxAPI(TerminalMultiplexerAPI):
         command = ["tmux", "new-session", "-d", "-s", session_name]
         self.shell.run(command, check=True)
 
-    def _is_valid_name(self, name: str) -> bool:
-        illegal_chars = [".", ":", "\t", "\n"]
-        if name.isspace() or not name:
-            return False
-        return all(char not in name for char in illegal_chars)
-
     def create_window(self, window_name: str, target: str) -> None:
         """
         Create a new window with the name `window_name`,
@@ -105,6 +99,12 @@ class TmuxAPI(TerminalMultiplexerAPI):
         res = self.shell.run(command, capture_output=True)
         if res.returncode != 0:
             raise ValueError("Invalid target")
+
+    def _is_valid_name(self, name: str) -> bool:
+        illegal_chars = [".", ":", "\t", "\n"]
+        if name.isspace() or not name:
+            return False
+        return all(char not in name for char in illegal_chars)
 
     def create_pane(self, target: str) -> None:
         pass
