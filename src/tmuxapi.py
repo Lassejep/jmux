@@ -82,9 +82,9 @@ class TmuxAPI(TerminalMultiplexerAPI):
         Create a new session with the name `session_name`.
         """
         if not self._is_valid_name(session_name):
-            raise ValueError("Session name cannot be empty")
+            raise ValueError("Invalid session name")
         command = ["tmux", "new-session", "-d", "-s", session_name]
-        self.shell.run(command)
+        self.shell.run(command, check=True)
 
     def _is_valid_name(self, name: str) -> bool:
         illegal_chars = [".", ":", "\t", "\n"]
@@ -93,7 +93,18 @@ class TmuxAPI(TerminalMultiplexerAPI):
         return all(char not in name for char in illegal_chars)
 
     def create_window(self, window_name: str, target: str) -> None:
-        pass
+        """
+        Create a new window with the name `window_name`,
+        in the `target` session.
+        """
+        if not self._is_valid_name(window_name):
+            raise ValueError("Invalid window name")
+        if not target:
+            raise ValueError("Invalid target")
+        command = ["tmux", "new-window", "-t", target, "-n", window_name]
+        res = self.shell.run(command, capture_output=True)
+        if res.returncode != 0:
+            raise ValueError("Invalid target")
 
     def create_pane(self, target: str) -> None:
         pass

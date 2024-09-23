@@ -70,15 +70,14 @@ class TestCreateSessionMethod:
         with pytest.raises(ValueError):
             tmux.create_session("")
 
-    def test_returns_none_given_valid_session_name(
-            self, tmux, shell):
+    def test_returns_none_given_valid_session_name(self, tmux, shell):
         shell.returns_response("")
         assert tmux.create_session("session_name") is None
 
-    invalid_names = ["session.name", "session:name", "session\tname",
-                     "session\nname", " ", "   ", "\t", "\n", "    \t"]
+    invalid_session_names = ["session.name", "session:name", "session\tname",
+                             "session\nname", " ", "   ", "\t", "\n", "    \t"]
 
-    @pytest.mark.parametrize("name", invalid_names)
+    @pytest.mark.parametrize("name", invalid_session_names)
     def test_throws_exception_given_invalid_session_name(self, tmux, name):
         with pytest.raises(ValueError):
             tmux.create_session(name)
@@ -100,6 +99,33 @@ class TestCreateWindowMethod:
         with pytest.raises(ValueError):
             tmux.create_window("", "session_name")
 
-    def test_returns_exception_given_invalid_target(self, tmux):
+    def test_returns_none_given_valid_window_name(self, tmux, shell):
+        shell.returns_response("")
+        assert tmux.create_window("window_name", "session_name") is None
+
+    def test_throws_exception_given_empty_target_session(self, tmux, shell):
+        shell.returns_response("")
         with pytest.raises(ValueError):
             tmux.create_window("window_name", "")
+
+    invalid_window_names = ["window.name", "window:name", "window\tname",
+                            "window\nname", " ", "   ", "\t", "\n", "    \t"]
+
+    @pytest.mark.parametrize("name", invalid_window_names)
+    def test_throws_exception_given_invalid_window_name(self, tmux, name):
+        with pytest.raises(ValueError):
+            tmux.create_window("window.name", "session_name")
+
+    def test_throws_exception_given_invalid_target_session(self, tmux, shell):
+        shell.returns_response("", stderr="can't find window: invalid_session",
+                               returncode=1)
+        with pytest.raises(ValueError):
+            tmux.create_window("window_name", "invalid_session")
+
+    def test_creates_new_tmux_window(self, tmux, shell):
+        shell.returns_response("window1\nwindow2\n")
+        tmux.create_window("window_name", "session_name")
+        command = ["tmux", "list-windows", "-t", "session_name", "-F",
+                   "#{window_name}"]
+        windows = shell.run(command, capture_output=True).stdout.split("\n")
+        assert "window_name" in windows

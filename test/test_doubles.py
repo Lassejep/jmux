@@ -29,4 +29,6 @@ class CompletedProcessTestDouble:
             raise ValueError("Only tmux commands are supported")
         if args[1] == "new-session":
             self.stdout += args[4]
+        if args[1] == "new-window":
+            self.stdout += args[5]
         return self
