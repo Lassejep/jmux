@@ -13,15 +13,15 @@ class TerminalMultiplexerAPI(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def create_session(self, session_name: str) -> None:
+    def create_session(self, session_name: str) -> str:
         pass
 
     @abc.abstractmethod
-    def create_window(self, window_name: str, target: str) -> None:
+    def create_window(self, window_name: str, target: str) -> str:
         pass
 
     @abc.abstractmethod
-    def create_pane(self, target: str) -> None:
+    def create_pane(self, target: str) -> str:
         pass
 
     @abc.abstractmethod
@@ -58,7 +58,8 @@ class TmuxAPI(TerminalMultiplexerAPI):
         formatted_keys = self._format_keys(keys)
         command = ["tmux", "display-message",
                    "-t", target, "-p", formatted_keys]
-        response = self.shell.run(command, capture_output=True).stdout
+        response = self.shell.run(
+            command, capture_output=True, text=True).stdout
         return self._format_response(keys, response)
 
     def _format_keys(self, keys: list[str]) -> str:
@@ -77,37 +78,55 @@ class TmuxAPI(TerminalMultiplexerAPI):
                 raise ValueError(f"Invalid key: {keys[i]}")
         return dict(zip(keys, response))
 
-    def create_session(self, session_name: str) -> None:
+    def create_session(self, session_name: str) -> str:
         """
         Create a new session with the name `session_name`.
+        Returns the id of the created session.
         """
         if not self._is_valid_name(session_name):
             raise ValueError("Invalid session name")
-        command = ["tmux", "new-session", "-d", "-s", session_name]
-        self.shell.run(command, check=True)
+        command = ["tmux", "new-session", "-ds",
+                   session_name, "-PF", "#{session_id}"]
+        response = self.shell.run(command, capture_output=True, text=True)
+        if response.returncode != 0:
+            raise self.shell.CalledProcessError(response.returncode, command)
+        return response.stdout.strip()
 
-    def create_window(self, window_name: str, target: str) -> None:
+    def create_window(self, window_name: str, target: str) -> str:
         """
         Create a new window with the name `window_name`,
         in the `target` session.
+        Returns the id of the created window.
         """
         if not self._is_valid_name(window_name):
             raise ValueError("Invalid window name")
         if not target:
             raise ValueError("Invalid target")
-        command = ["tmux", "new-window", "-t", target, "-n", window_name]
-        res = self.shell.run(command, capture_output=True)
-        if res.returncode != 0:
+        command = ["tmux", "new-window", "-t", target, "-n", window_name,
+                   "-PF", "#{window_id}"]
+        response = self.shell.run(command, capture_output=True)
+        if response.returncode != 0:
             raise ValueError("Invalid target")
+        return response.stdout.strip()
 
     def _is_valid_name(self, name: str) -> bool:
-        illegal_chars = [".", ":", "\t", "\n"]
+        illegal_chars = [".", ":", "\t", "\n", "$", "@", "%"]
         if name.isspace() or not name:
             return False
         return all(char not in name for char in illegal_chars)
 
-    def create_pane(self, target: str) -> None:
-        pass
+    def create_pane(self, target: str) -> str:
+        """
+        Create a new pane in the `target` window.
+        Returns the id of the created pane.
+        """
+        if not target:
+            raise ValueError("Invalid target")
+        command = ["tmux", "split-window", "-t", target, "-PF", "#{pane_id}"]
+        response = self.shell.run(command, capture_output=True)
+        if response.returncode != 0:
+            raise ValueError("Invalid target")
+        return response.stdout.strip()
 
     def focus_element(self, target: str) -> None:
         pass
