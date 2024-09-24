@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, List
 
 
 class SubprocessTestDouble:
@@ -33,8 +33,8 @@ class CompletedProcessTestDouble:
 
 class TmuxTestDouble:
     def __init__(self, response: CompletedProcessTestDouble) -> None:
-        self.sessions = []
-        self.windows = []
+        self.sessions: List[str] = []
+        self.windows: List[str] = []
         self.response = response
 
     def __call__(self, args: list[str]) -> CompletedProcessTestDouble:
