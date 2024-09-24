@@ -145,13 +145,47 @@ class TmuxAPI(TerminalMultiplexerAPI):
         self.shell.run(command)
 
     def kill_element(self, target: str) -> None:
-        pass
+        """
+        Kill the `target` pane, window, or session.
+        """
+        if not self._is_valid_target(target):
+            raise ValueError("Invalid target")
+        match target[0]:
+            case "$":
+                action = "kill-session"
+            case "@":
+                action = "kill-window"
+            case "%":
+                action = "kill-pane"
+        command = ["tmux", action, "-t", target]
+        self.shell.run(command)
 
     def change_window_layout(self, layout: str, target: str) -> None:
-        pass
+        """
+        Change the layout of the `target` window.
+        """
+        if not layout:
+            raise ValueError("Layout cannot be empty")
+        if not self._is_valid_target(target):
+            raise ValueError("Invalid target")
+        command = ["tmux", "select-layout", "-t", target, layout]
+        response = self.shell.run(command)
+        if response.returncode != 0:
+            raise ValueError("Invalid target")
 
     def change_pane_directory(self, directory: str, target: str) -> None:
-        pass
+        """
+        Change the directory of the `target` pane.
+        """
+        if not directory:
+            raise ValueError("Directory cannot be empty")
+        if not self._is_valid_target(target):
+            raise ValueError("Invalid target")
+        command = ["tmux", "send-keys", "-t",
+                   target, f"cd {directory}", "C-m", "C-l"]
+        response = self.shell.run(command)
+        if response.returncode != 0:
+            raise ValueError("Invalid target")
 
     def _is_valid_target(self, target: str) -> bool:
         valid_chars = {"$", "@", "%"}

@@ -200,3 +200,99 @@ class TestFocusElementMethod:
                    "@target", "-p", "#{window_active}"]
         response = shell.run(command, capture_output=True).stdout
         assert response == "1"
+
+
+class TestKillElementMethod:
+    """
+    Test the kill_element method of the TmuxAPI class.
+    """
+
+    def test_throws_exception_given_empty_target(self, tmux):
+        with pytest.raises(ValueError):
+            tmux.kill_element("")
+
+    def test_returns_none_given_valid_target(self, tmux, shell):
+        shell.returns_response("")
+        assert tmux.kill_element("@target") is None
+
+    def test_throws_exception_given_invalid_target(self, tmux, shell):
+        shell.returns_response("", stderr="can't find pane: invalid_target",
+                               returncode=1)
+        with pytest.raises(ValueError):
+            tmux.kill_element("invalid_target")
+
+    def test_kills_target(self, tmux, shell):
+        shell.returns_response("")
+        tmux.kill_element("@target")
+        command = ["tmux", "list-windows", "-t",
+                   "@target", "-F", "#{window_id}"]
+        response = shell.run(command, capture_output=True).stdout
+        assert len(response.strip()) == 0
+
+
+class TestChangeWindowLayoutMethod:
+    """
+    Test the change_window_layout method of the TmuxAPI class.
+    """
+
+    def test_throws_exception_given_empty_layout(self, tmux, shell):
+        shell.returns_response("")
+        with pytest.raises(ValueError):
+            tmux.change_window_layout("", "@target")
+
+    def test_throws_exception_given_invalid_layout(self, tmux, shell):
+        shell.returns_response("", stderr="invalid layout: invalid_layout",
+                               returncode=1)
+        with pytest.raises(ValueError):
+            tmux.change_window_layout("invalid_layout", "@target")
+
+    def test_throws_exception_given_empty_target(self, tmux):
+        with pytest.raises(ValueError):
+            tmux.change_window_layout("layout", "")
+
+    def test_returns_none_given_valid_layout_and_target(self, tmux, shell):
+        shell.returns_response("")
+        assert tmux.change_window_layout("layout", "@target") is None
+
+    def test_changes_layout_of_target_window(self, tmux, shell):
+        shell.returns_response("")
+        tmux.change_window_layout("layout", "@target")
+        command = ["tmux", "display-message", "-t",
+                   "@target", "-pF", "#{window_layout}"]
+        shell.returns_response("layout")
+        response = shell.run(command, capture_output=True).stdout
+        assert response == "layout"
+
+
+class TestChangePaneDirectoryMethod:
+    """
+    Test the change_pane_directory method of the TmuxAPI class.
+    """
+
+    def test_throws_exception_given_empty_directory(self, tmux, shell):
+        shell.returns_response("")
+        with pytest.raises(ValueError):
+            tmux.change_pane_directory("", "%target")
+
+    def test_throws_exception_given_invalid_target(self, tmux, shell):
+        shell.returns_response("", stderr="can't find pane: invalid_target",
+                               returncode=1)
+        with pytest.raises(ValueError):
+            tmux.change_pane_directory("directory", "%invalid_target")
+
+    def test_throws_exception_given_empty_target(self, tmux):
+        with pytest.raises(ValueError):
+            tmux.change_pane_directory("directory", "")
+
+    def test_returns_none_given_valid_directory_and_target(self, tmux, shell):
+        shell.returns_response("")
+        assert tmux.change_pane_directory("directory", "%target") is None
+
+    def test_changes_directory_of_target_pane(self, tmux, shell):
+        shell.returns_response("")
+        tmux.change_pane_directory("directory", "%target")
+        command = ["tmux", "display-message", "-t",
+                   "%target", "-pF", "#{pane_current_path}"]
+        shell.returns_response("directory")
+        response = shell.run(command, capture_output=True).stdout
+        assert response == "directory"
