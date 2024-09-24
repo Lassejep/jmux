@@ -38,14 +38,21 @@ class TmuxTestDouble:
         self.response = response
 
     def __call__(self, args: list[str]) -> CompletedProcessTestDouble:
-        if args[1] == "list-sessions":
+        tmux_action = args[1]
+        if tmux_action == "list-sessions":
             session_names = "\n".join(self.sessions) + "\n"
             self.response.stdout = session_names
-        if args[1] == "list-windows":
+        if tmux_action == "list-windows":
             window_names = "\n".join(self.windows) + "\n"
             self.response.stdout = window_names
-        if args[1] == "new-session":
+        if tmux_action == "new-session":
             self.sessions.append(args[3])
-        if args[1] == "new-window":
+        if tmux_action == "new-window":
             self.windows.append(args[5])
+        if tmux_action == "switch-client":
+            self.response.stdout = "1"
+        if tmux_action == "select-window":
+            self.response.stdout = "1"
+        if tmux_action == "select-pane":
+            self.response.stdout = "1"
         return self.response(args)

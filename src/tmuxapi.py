@@ -100,7 +100,7 @@ class TmuxAPI(TerminalMultiplexerAPI):
         """
         if not self._is_valid_name(window_name):
             raise ValueError("Invalid window name")
-        if not target:
+        if not self._is_valid_target(target):
             raise ValueError("Invalid target")
         command = ["tmux", "new-window", "-t", target, "-n", window_name,
                    "-PF", "#{window_id}"]
@@ -110,7 +110,7 @@ class TmuxAPI(TerminalMultiplexerAPI):
         return response.stdout.strip()
 
     def _is_valid_name(self, name: str) -> bool:
-        illegal_chars = [".", ":", "\t", "\n", "$", "@", "%"]
+        illegal_chars = {".", ":", "\t", "\n", "$", "@", "%"}
         if name.isspace() or not name:
             return False
         return all(char not in name for char in illegal_chars)
@@ -120,7 +120,7 @@ class TmuxAPI(TerminalMultiplexerAPI):
         Create a new pane in the `target` window.
         Returns the id of the created pane.
         """
-        if not target:
+        if not self._is_valid_target(target):
             raise ValueError("Invalid target")
         command = ["tmux", "split-window", "-t", target, "-PF", "#{pane_id}"]
         response = self.shell.run(command, capture_output=True)
@@ -129,7 +129,20 @@ class TmuxAPI(TerminalMultiplexerAPI):
         return response.stdout.strip()
 
     def focus_element(self, target: str) -> None:
-        pass
+        """
+        Focus on the `target` pane, window, or session.
+        """
+        if not self._is_valid_target(target):
+            raise ValueError("Invalid target")
+        match target[0]:
+            case "$":
+                action = "switch"
+            case "@":
+                action = "select-window"
+            case "%":
+                action = "select-pane"
+        command = ["tmux", action, "-t", target]
+        self.shell.run(command)
 
     def kill_element(self, target: str) -> None:
         pass
@@ -139,3 +152,7 @@ class TmuxAPI(TerminalMultiplexerAPI):
 
     def change_pane_directory(self, directory: str, target: str) -> None:
         pass
+
+    def _is_valid_target(self, target: str) -> bool:
+        valid_chars = {"$", "@", "%"}
+        return any(target.startswith(char) for char in valid_chars)

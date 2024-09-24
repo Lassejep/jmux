@@ -23,7 +23,7 @@ class TestGetMethod:
         with pytest.raises(ValueError):
             tmux.get([])
         with pytest.raises(ValueError):
-            tmux.get([], "target")
+            tmux.get([], "%pane_id")
 
     def test_throws_exception_given_invalid_keys(self, tmux, shell):
         shell.returns_response("")
@@ -102,11 +102,11 @@ class TestCreateWindowMethod:
 
     def test_throws_exception_given_empty_window_name(self, tmux):
         with pytest.raises(ValueError):
-            tmux.create_window("", "session_name")
+            tmux.create_window("", "$session_id")
 
     def test_returns_string_given_valid_window_name(self, tmux, shell):
         shell.returns_response("window_id")
-        response = tmux.create_window("window_name", "session_name")
+        response = tmux.create_window("window_name", "$session_id")
         assert isinstance(response, str)
 
     def test_throws_exception_given_empty_target_session(self, tmux, shell):
@@ -120,17 +120,17 @@ class TestCreateWindowMethod:
     @pytest.mark.parametrize("name", invalid_window_names)
     def test_throws_exception_given_invalid_window_name(self, tmux, name):
         with pytest.raises(ValueError):
-            tmux.create_window("window.name", "session_name")
+            tmux.create_window("window.name", "$session_id")
 
     def test_throws_exception_given_invalid_target_session(self, tmux, shell):
         shell.returns_response("", stderr="can't find window: invalid_session",
                                returncode=1)
         with pytest.raises(ValueError):
-            tmux.create_window("window_name", "invalid_session")
+            tmux.create_window("window_name", "invalid_session_id")
 
     def test_creates_new_tmux_window(self, tmux, shell):
         shell.returns_response("window1\nwindow2\n")
-        tmux.create_window("window_name", "session_name")
+        tmux.create_window("window_name", "$session_id")
         command = ["tmux", "list-windows", "-t", "session_name", "-F",
                    "#{window_name}"]
         windows = shell.run(command, capture_output=True).stdout.split("\n")
@@ -138,7 +138,7 @@ class TestCreateWindowMethod:
 
     def test_returns_id_of_created_window(self, tmux, shell):
         shell.returns_response("window_id")
-        assert tmux.create_window("window_name", "session_name") == "window_id"
+        assert tmux.create_window("window_name", "$session_id") == "window_id"
 
 
 class TestCreatePaneMethod:
@@ -152,23 +152,51 @@ class TestCreatePaneMethod:
 
     def test_returns_string_given_valid_target_window(self, tmux, shell):
         shell.returns_response("pane_id")
-        response = tmux.create_pane("window_name")
+        response = tmux.create_pane("@window_id")
         assert isinstance(response, str)
 
     def test_returns_id_of_created_pane(self, tmux, shell):
         shell.returns_response("pane_id")
-        assert tmux.create_pane("window_name") == "pane_id"
+        assert tmux.create_pane("@window_id") == "pane_id"
 
     def test_throws_exception_given_invalid_target_window(self, tmux, shell):
         shell.returns_response("", stderr="can't find window: invalid_window",
                                returncode=1)
         with pytest.raises(ValueError):
-            tmux.create_pane("invalid_window")
+            tmux.create_pane("invalid_window_id")
 
     def test_creates_new_tmux_pane(self, tmux, shell):
         shell.returns_response("pane_id")
-        response = tmux.create_pane("window_name")
+        response = tmux.create_pane("@window_id")
         command = ["tmux", "list-panes", "-t", "window_name", "-F",
                    "#{pane_id}"]
         panes = shell.run(command, capture_output=True).stdout.split("\n")
         assert response in panes
+
+
+class TestFocusElementMethod:
+    """
+    Test the focus_element method of the TmuxAPI class.
+    """
+
+    def test_throws_exception_given_empty_target(self, tmux):
+        with pytest.raises(ValueError):
+            tmux.focus_element("")
+
+    def test_returns_none_given_valid_target(self, tmux, shell):
+        shell.returns_response("")
+        assert tmux.focus_element("@target") is None
+
+    def test_throws_exception_given_invalid_target(self, shell, tmux):
+        shell.returns_response("", stderr="can't find pane: invalid_target",
+                               returncode=1)
+        with pytest.raises(ValueError):
+            tmux.focus_element("invalid_target")
+
+    def test_focuses_on_target(self, tmux, shell):
+        shell.returns_response("")
+        tmux.focus_element("@target")
+        command = ["tmux", "display-message", "-t",
+                   "@target", "-p", "#{window_active}"]
+        response = shell.run(command, capture_output=True).stdout
+        assert response == "1"
