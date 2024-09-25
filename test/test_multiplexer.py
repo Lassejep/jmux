@@ -1,5 +1,7 @@
 import pytest
 import subprocess
+import os
+from unittest import mock
 from time import sleep
 
 from src.multiplexer import TmuxAPI
@@ -50,6 +52,16 @@ def pane_id(shell, window_id):
 @pytest.fixture(scope="function")
 def layout():
     yield "tiled"
+
+
+class TestTmuxAPIIsRunningMethod:
+    @mock.patch.dict(os.environ, {"TMUX": "/tmp/tmux-1001/default"})
+    def test_returns_true_if_tmux_is_running(self, tmux):
+        assert tmux.is_running()
+
+    @mock.patch.dict(os.environ, {"TMUX": ""})
+    def test_returns_false_if_tmux_is_not_running(self, tmux):
+        assert not tmux.is_running()
 
 
 class TestTmuxAPIGetMethod:

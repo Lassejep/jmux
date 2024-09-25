@@ -1,4 +1,5 @@
 import abc
+import os
 from typing import Optional
 
 
@@ -7,6 +8,13 @@ class TerminalMultiplexerAPI(abc.ABC):
     Abstract class for a terminal multiplexer API.
     Responsible for communicating with the terminal multiplexer.
     """
+
+    @abc.abstractmethod
+    def is_running(self) -> bool:
+        """
+        Check if the terminal multiplexer is running.
+        """
+        pass
 
     @abc.abstractmethod
     def get(self, key: list[str], target: str = "") -> dict[str, str]:
@@ -76,13 +84,34 @@ class TmuxAPI(TerminalMultiplexerAPI):
 
     def __init__(self, shell) -> None:
         self.shell = shell
+        self._bin = self._get_binary()
+        if not self._bin:
+            raise EnvironmentError("Tmux not found")
+
+    def _get_binary(self) -> str:
+        command = ["which", "tmux"]
+        response = self.shell.run(command, capture_output=True, text=True)
+        if response.returncode != 0:
+            raise self.shell.CalledProcessError(
+                response.returncode, "which tmux")
+        return response.stdout.strip()
+
+    def is_running(self) -> bool:
+        """
+        Check if the Tmux terminal multiplexer is running.
+        """
+        env = os.environ.copy()
+        print(env)
+        if "TMUX" in env and env["TMUX"] != "":
+            return True
+        return False
 
     def get(self, keys: list[str],
             target: Optional[str] = None) -> dict[str, str]:
         """
         Get the values of `keys` from the `target` pane, window, or session.
         """
-        command = ["tmux", "display-message"]
+        command = [self._bin, "display-message"]
         if target:
             if not self._is_valid_target(target):
                 raise ValueError("Invalid target")
@@ -115,7 +144,7 @@ class TmuxAPI(TerminalMultiplexerAPI):
         """
         if not self._is_valid_name(session_name):
             raise ValueError("Invalid session name")
-        command = ["tmux", "new-session", "-ds",
+        command = [self._bin, "new-session", "-ds",
                    session_name, "-PF", "#{session_id}"]
         response = self.shell.run(
             command, capture_output=True, text=True, check=True)
@@ -131,7 +160,7 @@ class TmuxAPI(TerminalMultiplexerAPI):
             raise ValueError("Invalid window name")
         if not self._is_valid_target(target):
             raise ValueError("Invalid target")
-        command = ["tmux", "new-window", "-t", target, "-n", window_name,
+        command = [self._bin, "new-window", "-t", target, "-n", window_name,
                    "-PF", "#{window_id}"]
         response = self.shell.run(
             command, capture_output=True, text=True, check=True)
@@ -150,7 +179,8 @@ class TmuxAPI(TerminalMultiplexerAPI):
         """
         if not self._is_valid_target(target):
             raise ValueError("Invalid target")
-        command = ["tmux", "split-window", "-t", target, "-PF", "#{pane_id}"]
+        command = [self._bin, "split-window",
+                   "-t", target, "-PF", "#{pane_id}"]
         response = self.shell.run(
             command, capture_output=True, text=True, check=True)
         return response.stdout.strip()
@@ -168,7 +198,7 @@ class TmuxAPI(TerminalMultiplexerAPI):
                 action = "select-window"
             case "%":
                 action = "select-pane"
-        command = ["tmux", action, "-t", target]
+        command = [self._bin, action, "-t", target]
         self.shell.run(command)
 
     def kill_element(self, target: str) -> None:
@@ -184,7 +214,7 @@ class TmuxAPI(TerminalMultiplexerAPI):
                 action = "kill-window"
             case "%":
                 action = "kill-pane"
-        command = ["tmux", action, "-t", target]
+        command = [self._bin, action, "-t", target]
         self.shell.run(command)
 
     def change_window_layout(self, layout: str, target: str) -> None:
@@ -195,7 +225,7 @@ class TmuxAPI(TerminalMultiplexerAPI):
             raise ValueError("Layout cannot be empty")
         if not self._is_valid_target(target):
             raise ValueError("Invalid target")
-        command = ["tmux", "select-layout", "-t", target, layout]
+        command = [self._bin, "select-layout", "-t", target, layout]
         err = self.shell.run(command, capture_output=True, text=True).stderr
         if "invalid layout" in err:
             raise ValueError("Invalid layout")
@@ -210,7 +240,7 @@ class TmuxAPI(TerminalMultiplexerAPI):
             raise ValueError("Directory cannot be empty")
         if not self._is_valid_target(target):
             raise ValueError("Invalid target")
-        command = ["tmux", "send-keys", "-t",
+        command = [self._bin, "send-keys", "-t",
                    target, f"cd {directory}", "C-m", "C-l"]
         err = self.shell.run(command, capture_output=True, text=True).stderr
         if "can't find pane" in err:
