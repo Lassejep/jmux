@@ -1,7 +1,6 @@
 import pytest
 import subprocess
 import os
-from unittest import mock
 from time import sleep
 
 from src.multiplexer import TmuxAPI
@@ -55,12 +54,12 @@ def layout():
 
 
 class TestTmuxAPIIsRunningMethod:
-    @mock.patch.dict(os.environ, {"TMUX": "/tmp/tmux-1001/default"})
-    def test_returns_true_if_tmux_is_running(self, tmux):
+    def test_returns_true_if_tmux_is_running(self, tmux, mocker):
+        mocker.patch.dict(os.environ, {"TMUX": "/tmp/tmux-1001/default"})
         assert tmux.is_running()
 
-    @mock.patch.dict(os.environ, {"TMUX": ""})
-    def test_returns_false_if_tmux_is_not_running(self, tmux):
+    def test_returns_false_if_tmux_is_not_running(self, tmux, mocker):
+        mocker.patch.dict(os.environ, {"TMUX": ""})
         assert not tmux.is_running()
 
 
