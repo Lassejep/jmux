@@ -101,7 +101,6 @@ class TmuxAPI(TerminalMultiplexerAPI):
         Check if the Tmux terminal multiplexer is running.
         """
         env = os.environ.copy()
-        print(env)
         if "TMUX" in env and env["TMUX"] != "":
             return True
         return False
