@@ -54,7 +54,7 @@ class JmuxLoader:
 
     def _load_windows(self, session_id: str,
                       num_windows: int) -> list[JmuxWindow]:
-        return [self._load_window(f"{session_id}.{i}")
+        return [self._load_window(f"{session_id}:{i}")
                 for i in range(num_windows)]
 
     def _load_window(self, target_window: str) -> JmuxWindow:
@@ -85,3 +85,14 @@ class JmuxBuilder:
 
     def __init__(self, multiplexer: TerminalMultiplexerAPI):
         self.multiplexer = multiplexer
+        if multiplexer is None:
+            raise ValueError("Invalid multiplexer")
+
+    def build(self, session: JmuxSession) -> None:
+        if not session:
+            raise ValueError("Invalid session")
+        data = self.multiplexer.get(["session_name"], session.id)
+        if session.name in data.values():
+            raise ValueError("Session already exists")
+        new_id = self.multiplexer.create_session(session.name)
+        session.id = new_id

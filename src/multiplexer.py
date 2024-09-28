@@ -159,7 +159,7 @@ class TmuxAPI(TerminalMultiplexerAPI):
             raise ValueError("Invalid window name")
         if not self._is_valid_target(target):
             raise ValueError("Invalid target")
-        command = [self._bin, "new-window", "-t", target, "-n", window_name,
+        command = [self._bin, "new-window", "-t", target, "-kn", window_name,
                    "-PF", "#{window_id}"]
         response = self.shell.run(
             command, capture_output=True, text=True, check=True)
