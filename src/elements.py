@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from src.multiplexer import TerminalMultiplexerAPI
+from src.multiplexer import TerminalMultiplexerClient
 
 
 @dataclass
@@ -31,7 +31,7 @@ class JmuxLoader:
     Load terminal multiplexer sessions, windows, and panes into Jmux objects.
     """
 
-    def __init__(self, multiplexer: TerminalMultiplexerAPI):
+    def __init__(self, multiplexer: TerminalMultiplexerClient):
         self.multiplexer = multiplexer
         if multiplexer is None:
             raise ValueError("Invalid multiplexer")
@@ -83,7 +83,7 @@ class JmuxBuilder:
     from Jmux objects.
     """
 
-    def __init__(self, multiplexer: TerminalMultiplexerAPI):
+    def __init__(self, multiplexer: TerminalMultiplexerClient):
         self.multiplexer = multiplexer
         if multiplexer is None:
             raise ValueError("Invalid multiplexer")
@@ -94,5 +94,39 @@ class JmuxBuilder:
         data = self.multiplexer.get(["session_name"], session.id)
         if session.name in data.values():
             raise ValueError("Session already exists")
-        new_id = self.multiplexer.create_session(session.name)
-        session.id = new_id
+        session.id = self.multiplexer.create_session(session.name)
+        self._create_windows(session.id, session.windows)
+        """
+        new sessions create a window by default that is finicky to manage,
+        to avoid having to deal with it, we kill it.
+        Killing the only window in a session will also kill the session,
+        so we have to kill the default window after creating our own windows.
+        """
+        self.multiplexer.kill_element(f"{session.id}:1")
+
+    def _create_windows(self, session_id: str,
+                        windows: list[JmuxWindow]) -> None:
+        if not windows:
+            raise ValueError("Session must have at least one window")
+        for window in windows:
+            window.id = self.multiplexer.create_window(window.name, session_id)
+            self._create_panes(window.id, window.panes)
+            """
+            new windows start with a pane already created,
+            to avoid having to manage it, we kill it.
+            Killing the only pane in a window will also kill the window,
+            so we have to kill the starting pane after creating our own panes.
+            """
+            self.multiplexer.kill_element(f"{window.id}.1")
+            self.multiplexer.change_window_layout(window.layout, window.id)
+            if window.focus:
+                self.multiplexer.focus_element(window.id)
+
+    def _create_panes(self, window_id: str, panes: list[JmuxPane]) -> None:
+        if not panes:
+            raise ValueError("Window must have at least one pane")
+        for pane in panes:
+            pane.id = self.multiplexer.create_pane(window_id)
+            if pane.focus:
+                self.multiplexer.focus_element(pane.id)
+            self.multiplexer.change_pane_directory(pane.current_dir, pane.id)
