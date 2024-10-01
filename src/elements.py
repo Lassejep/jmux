@@ -89,6 +89,9 @@ class JmuxBuilder:
             raise ValueError("Invalid multiplexer")
 
     def build(self, session: JmuxSession) -> None:
+        """
+        Build the JmuxSession object `session` in the terminal multiplexer.
+        """
         if not session:
             raise ValueError("Invalid session")
         data = self.multiplexer.get(["session_name"], session.id)
