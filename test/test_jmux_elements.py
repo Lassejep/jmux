@@ -1,7 +1,7 @@
 import pytest
 
 from src.multiplexer import TerminalMultiplexerClient
-from src.elements import JmuxSession, JmuxWindow, JmuxPane
+from src.models import JmuxSession, JmuxWindow, JmuxPane
 from src.elements import JmuxLoader, JmuxBuilder
 
 
