@@ -2,35 +2,31 @@ import subprocess
 
 import pytest
 
-from src.tmux_client import TmuxClient
 from src.multiplexer import TerminalMultiplexerClient
 from src.elements import JmuxLoader, JmuxBuilder
 from src.models import JmuxSession, JmuxWindow, JmuxPane
 
 
 @pytest.fixture()
-def shell(mocker):
-    mock_shell = mocker.Mock(spec=subprocess)
-    yield mock_shell
-
-
-@pytest.fixture()
-def tmux(shell):
-    shell.run.return_value = subprocess.CompletedProcess(
-        args=["which", "tmux"], returncode=0, stdout="/usr/bin/tmux",
-        stderr="")
-    yield TmuxClient(shell)
+def mock_shell(mocker):
+    yield mocker.Mock(spec=subprocess)
 
 
 @pytest.fixture
-def multiplexer(mocker):
-    mock_multiplexer = mocker.Mock(spec=TerminalMultiplexerClient)
-    yield mock_multiplexer
+def mock_multiplexer(mocker):
+    yield mocker.Mock(spec=TerminalMultiplexerClient)
 
 
 @pytest.fixture
-def jmux_loader(multiplexer):
-    yield JmuxLoader(multiplexer)
+def mock_loader(mock_multiplexer, mocker):
+    jmux_loader = JmuxLoader(mock_multiplexer)
+    yield mocker.Mock(spec=jmux_loader)
+
+
+@pytest.fixture
+def mock_builder(mock_multiplexer, mocker):
+    jmux_builder = JmuxBuilder(mock_multiplexer)
+    yield mocker.Mock(spec=jmux_builder)
 
 
 @pytest.fixture
@@ -40,11 +36,6 @@ def session_data():
                    "window_focus": 0, "panes": 1}
     pane_data = {"pane_id": "%1", "pane_focus": 0, "pane_current_dir": "test"}
     yield session_data, window_data, pane_data
-
-
-@pytest.fixture
-def jmux_builder(multiplexer):
-    yield JmuxBuilder(multiplexer)
 
 
 @pytest.fixture

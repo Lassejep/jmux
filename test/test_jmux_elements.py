@@ -4,6 +4,16 @@ from src.models import JmuxSession, JmuxWindow, JmuxPane
 from src.elements import JmuxLoader, JmuxBuilder
 
 
+@pytest.fixture
+def jmux_loader(mock_multiplexer):
+    yield JmuxLoader(mock_multiplexer)
+
+
+@pytest.fixture
+def jmux_builder(mock_multiplexer):
+    yield JmuxBuilder(mock_multiplexer)
+
+
 class TestJmuxLoader:
     """Test the JmuxLoader class."""
 
@@ -12,8 +22,8 @@ class TestJmuxLoader:
             JmuxLoader(None)
 
     def test_load_returns_type_jmux_session(
-            self, jmux_loader, multiplexer, session_data):
-        multiplexer.get.side_effect = session_data
+            self, jmux_loader, mock_multiplexer, session_data):
+        mock_multiplexer.get.side_effect = session_data
         jmux_session = jmux_loader.load()
         assert isinstance(jmux_session, JmuxSession)
 
