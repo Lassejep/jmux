@@ -31,10 +31,13 @@ def mock_builder(mock_multiplexer, mocker):
 
 @pytest.fixture
 def session_data():
-    session_data = {"session_name": "test", "session_id": "$1", "windows": 1}
-    window_data = {"window_name": "test", "window_id": "@1", "layout": "test",
-                   "window_focus": 0, "panes": 1}
-    pane_data = {"pane_id": "%1", "pane_focus": 0, "pane_current_dir": "test"}
+    session_data = {"session_name": "test",
+                    "session_id": "$1", "session_windows": 1}
+    window_data = {"window_name": "test", "window_id": "@1",
+                   "window_layout": "test", "window_active": 0,
+                   "window_panes": 1}
+    pane_data = {"pane_id": "%1", "pane_active": 0,
+                 "pane_current_path": "test"}
     yield session_data, window_data, pane_data
 
 
