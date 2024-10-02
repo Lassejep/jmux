@@ -10,12 +10,14 @@ sudo ln -s /path/to/jmux.py /usr/local/bin/jmux
 ```
 
 ### Installing python dependencies
+The project dependencies are currently only for testing purposes and therefore not strictly necessary.
+However, if you are having trouble getting the program to work you might want to install them.
 ```bash
 pip install -r requirements.txt
 ```
 
 ### Running tests
-Before using jmux I highly recommend you run the tests to make sure everything is working as intended.
+Before using jmux I recommend you run the tests to make sure everything is working as intended.
 ```bash
 python -m pytest
 ```
@@ -35,11 +37,16 @@ Simply type the name of the session and press enter.
 You will have to manually switch to the tmux session after loading it.
 
 ## Dependencies
+### Required
 - Python 3.11 or newer
 - Tmux 3.4 or newer
 
+### Optional
+- Pytest 8.3.3 or newer
+- Pytest-mock 3.14.0 or newer
+
 ## TODO
-- [ ] Fix bug where new panes created clear
+- [ ] Fix bug where the program doesn't recognize already running tmux session.
 - [ ] Add the ability to delete saved sessions
 - [ ] Add the ability to rename saved sessions
 - [ ] Create a small GUI for the program
