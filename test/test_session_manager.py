@@ -1,53 +1,30 @@
 from pathlib import Path
+from dataclasses import asdict
+import json
 
 import pytest
 
-from src.multiplexer import TerminalMultiplexerClient
 from src.session_manager import SessionManager
-from src.elements import JmuxLoader
 
 
 @pytest.fixture
-def multiplexer(mocker):
-    yield mocker.Mock(spec=TerminalMultiplexerClient)
+def session_manager(mock_loader):
+    yield SessionManager(mock_loader)
 
 
 @pytest.fixture
-def jmux_loader(multiplexer, mocker):
-    jmux_loader = JmuxLoader(multiplexer)
-    yield mocker.Mock(spec=jmux_loader)
-
-
-@pytest.fixture
-def session_manager(multiplexer, jmux_loader):
-    yield SessionManager(multiplexer, jmux_loader)
-
-
-@pytest.fixture
-def file(mocker):
+def mock_file(mocker):
     path = Path("/tmp/test")
-    yield mocker.Mock(spec=path)
+    mock_path = mocker.MagicMock(spec=path)
+    m_open = mocker.mock_open()
+    mock_path.open = m_open
+    yield mock_path
 
 
 class TestSessionManagerConstructor:
-    def test_throws_exception_if_multiplexer_is_none(self, jmux_loader):
+    def test_throws_exception_if_jmux_loader_is_none(self):
         with pytest.raises(ValueError):
-            SessionManager(None, jmux_loader)
-
-    def test_throws_exception_if_multiplexer_wrong_type(self, jmux_loader):
-        with pytest.raises(ValueError):
-            SessionManager("multiplexer", jmux_loader)
-
-    def test_throws_exception_if_multiplexer_not_running(
-            self, multiplexer, jmux_loader):
-        multiplexer.is_running.return_value = False
-        with pytest.raises(EnvironmentError):
-            SessionManager(multiplexer, jmux_loader)
-
-    def test_throws_exception_if_jmux_loader_is_none(
-            self, multiplexer, mocker):
-        with pytest.raises(ValueError):
-            SessionManager(multiplexer, None)
+            SessionManager(None)
 
 
 class TestSaveSessionMethod:
@@ -56,20 +33,30 @@ class TestSaveSessionMethod:
         with pytest.raises(TypeError):
             session_manager.save_session("test_path")
 
-    def test_creates_file_if_not_exists(self, session_manager,
-                                        file, jmux_loader):
-        file.exists.return_value = False
-        file.touch.return_value = None
-        jmux_loader.load.return_value = "$1"
-        session_manager.save_session(file)
-        file.touch.assert_called_once()
+    def test_creates_file_if_not_exists(
+            self, session_manager, mock_file, mock_loader, test_jmux_session):
+        mock_file.exists.return_value = False
+        mock_file.touch.return_value = None
+        mock_loader.load.return_value = test_jmux_session
+        session_manager.save_session(mock_file)
+        mock_file.touch.assert_called_once()
 
     def test_gets_current_session_data(
-            self, session_manager, file, jmux_loader):
-        jmux_loader.load.return_value = "$1"
-        session_manager.save_session(file)
-        jmux_loader.load.assert_called_once()
+            self, session_manager, mock_file, mock_loader, test_jmux_session):
+        mock_loader.load.return_value = test_jmux_session
+        session_manager.save_session(mock_file)
+        mock_loader.load.assert_called_once()
 
     def test_writes_current_session_data_to_file(
-            self, session_manager, file, jmux_loader):
-        session_manager.save_session(file)
+            self, session_manager, mock_file, mock_loader, test_jmux_session):
+        mock_loader.load.return_value = test_jmux_session
+        session_manager.save_session(mock_file)
+        mock_file.open.assert_called_with("w")
+
+    def test_write_file_data_is_json_format(
+            self, session_manager, mock_file, mock_loader, test_jmux_session):
+        mock_loader.load.return_value = test_jmux_session
+        session_manager.save_session(mock_file)
+        written_data = mock_file.open().write.call_args_list
+        written_data = ''.join([arg[0][0] for arg in written_data])
+        assert written_data == json.dumps(asdict(test_jmux_session), indent=4)
