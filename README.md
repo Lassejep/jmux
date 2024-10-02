@@ -5,8 +5,6 @@ This project is mainly for me to experiment with doing TDD in Python, but maybe 
 ## Installation
 ```bash
 git clone "https://github.com/lassejep/jmux.git"
-chmod +x jmux.py
-sudo ln -s /path/to/jmux.py /usr/local/bin/jmux
 ```
 
 ### Installing python dependencies
