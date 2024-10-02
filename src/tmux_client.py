@@ -48,7 +48,13 @@ class TmuxClient(TerminalMultiplexerClient):
         response = self.shell.run(command, capture_output=True, text=True)
         if response.returncode != 0:
             raise self.shell.CalledProcessError(response.returncode, command)
-        return self._format_response(keys, response.stdout)
+        try:
+            return self._format_response(keys, response.stdout)
+        except ValueError as error:
+            if target:
+                raise ValueError(f"{error} for target: {target}")
+            else:
+                raise ValueError(error)
 
     def _format_keys(self, keys: list[str]) -> str:
         if not keys:
