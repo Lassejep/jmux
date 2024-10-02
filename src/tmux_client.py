@@ -163,7 +163,8 @@ class TmuxClient(TerminalMultiplexerClient):
         if "invalid layout" in err:
             raise ValueError("Invalid layout")
         elif err != "":
-            raise self.shell.CalledProcessError(err)
+            print(err)
+            raise self.shell.CalledProcessError(0, command, stderr=err)
 
     def change_pane_directory(self, directory: str, target: str) -> None:
         """
