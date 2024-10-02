@@ -72,7 +72,10 @@ class JmuxBuilder:
         """
         if not session:
             raise ValueError("Invalid session")
-        data = self.multiplexer.get(["session_name"], session.id)
+        try:
+            data = self.multiplexer.get(["session_name"], session.id)
+        except ValueError:
+            data = {}
         if session.name in data.values():
             raise ValueError("Session already exists")
         session.id = self.multiplexer.create_session(session.name)
@@ -83,7 +86,8 @@ class JmuxBuilder:
         Killing the only window in a session will also kill the session,
         so we have to kill the default window after creating our own windows.
         """
-        self.multiplexer.kill_element(f"{session.id}:1")
+        start_window = self.multiplexer.get(["window_id"], f"{session.id}:1")
+        self.multiplexer.kill_element(start_window["window_id"])
 
     def _create_windows(self, session_id: str,
                         windows: list[JmuxWindow]) -> None:
@@ -98,7 +102,8 @@ class JmuxBuilder:
             Killing the only pane in a window will also kill the window,
             so we have to kill the starting pane after creating our own panes.
             """
-            self.multiplexer.kill_element(f"{window.id}.1")
+            start_pane = self.multiplexer.get(["pane_id"], f"{window.id}.1")
+            self.multiplexer.kill_element(start_pane["pane_id"])
             self.multiplexer.change_window_layout(window.layout, window.id)
             if window.focus:
                 self.multiplexer.focus_element(window.id)
