@@ -3,7 +3,7 @@ import json
 from dataclasses import asdict
 
 from src.elements import JmuxLoader, JmuxBuilder
-from src.models import JmuxSession, JmuxWindow, JmuxPane
+from src.serialization import dict_to_JmuxSession
 
 
 class SessionManager:
@@ -50,17 +50,5 @@ class SessionManager:
 
         with load_file.open("r") as file:
             session_data = json.load(file)
-        session = self._deserialize_session(session_data)
+        session = dict_to_JmuxSession(session_data)
         self.jmux_builder.build(session)
-
-    def _deserialize_session(self, session_data: dict) -> JmuxSession:
-        session_data["windows"] = [self._deserialize_window(
-            window) for window in session_data["windows"]]
-        session = JmuxSession(**session_data)
-        return session
-
-    def _deserialize_window(self, window_data: dict) -> JmuxWindow:
-        window_data["panes"] = [JmuxPane(**pane)
-                                for pane in window_data["panes"]]
-        window = JmuxWindow(**window_data)
-        return window
