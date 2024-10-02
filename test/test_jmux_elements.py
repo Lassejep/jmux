@@ -14,6 +14,11 @@ def jmux_builder(mock_multiplexer):
     yield JmuxBuilder(mock_multiplexer)
 
 
+@pytest.fixture
+def get_returns():
+    yield {"": ""}, {"pane_id": "%1"}, {"window_id": "@1"}
+
+
 class TestJmuxLoader:
     """Test the JmuxLoader class."""
 
@@ -130,35 +135,40 @@ class TestJmuxBuilder:
             jmux_builder.build(test_jmux_session)
 
     def test_build_valid_session_returns_none(
-            self, jmux_builder, mock_multiplexer, test_jmux_session):
-        mock_multiplexer.get.return_value = {}
+            self, jmux_builder, mock_multiplexer, test_jmux_session,
+            get_returns):
+        mock_multiplexer.get.side_effect = get_returns
         mock_multiplexer.create_session.return_value = "$1"
         assert jmux_builder.build(test_jmux_session) is None
 
     def test_build_creates_a_session(
-            self, jmux_builder, mock_multiplexer, test_jmux_session):
-        mock_multiplexer.get.return_value = {}
+            self, jmux_builder, mock_multiplexer, test_jmux_session,
+            get_returns):
+        mock_multiplexer.get.side_effect = get_returns
         mock_multiplexer.create_session.return_value = "$1"
         jmux_builder.build(test_jmux_session)
         mock_multiplexer.create_session.assert_called_once()
 
     def test_build_creates_session_with_correct_name(
-            self, jmux_builder, mock_multiplexer, test_jmux_session):
-        mock_multiplexer.get.return_value = {}
+            self, jmux_builder, mock_multiplexer, test_jmux_session,
+            get_returns):
+        mock_multiplexer.get.side_effect = get_returns
         mock_multiplexer.create_session.return_value = "$1"
         jmux_builder.build(test_jmux_session)
         mock_multiplexer.create_session.assert_called_with("test")
 
     def test_build_creates_tmux_window(
-            self, jmux_builder, mock_multiplexer, test_jmux_session):
-        mock_multiplexer.get.return_value = {}
+            self, jmux_builder, mock_multiplexer, test_jmux_session,
+            get_returns):
+        mock_multiplexer.get.side_effect = get_returns
         mock_multiplexer.create_session.return_value = "$1"
         jmux_builder.build(test_jmux_session)
         mock_multiplexer.create_window.assert_called_once()
 
     def test_build_creates_tmux_pane(
-            self, jmux_builder, mock_multiplexer, test_jmux_session):
-        mock_multiplexer.get.return_value = {}
+            self, jmux_builder, mock_multiplexer, test_jmux_session,
+            get_returns):
+        mock_multiplexer.get.side_effect = get_returns
         mock_multiplexer.create_session.return_value = "$1"
         jmux_builder.build(test_jmux_session)
         mock_multiplexer.create_pane.assert_called_once()
@@ -167,16 +177,19 @@ class TestJmuxBuilder:
             self, jmux_builder, mock_multiplexer, test_jmux_session):
         test_jmux_session.windows.append(JmuxWindow(
             "test", "@2", "test", False, [JmuxPane("%2", False, "test")]))
-        mock_multiplexer.get.return_value = {}
+        get_returns = {"": ""}, {"pane_id": "%1"}, {
+            "pane_id": "%2"}, {"window_id": "@1"}
+        mock_multiplexer.get.side_effect = get_returns
         mock_multiplexer.create_session.return_value = "$1"
         jmux_builder.build(test_jmux_session)
         assert mock_multiplexer.create_window.call_count == 2
 
     def test_build_two_panes_in_one_window(
-            self, jmux_builder, mock_multiplexer, test_jmux_session):
+            self, jmux_builder, mock_multiplexer, test_jmux_session,
+            get_returns):
         test_jmux_session.windows[0].panes.append(JmuxPane(
             "%2", False, "test"))
-        mock_multiplexer.get.return_value = {}
+        mock_multiplexer.get.side_effect = get_returns
         mock_multiplexer.create_session.return_value = "$1"
         jmux_builder.build(test_jmux_session)
         assert mock_multiplexer.create_pane.call_count == 2
@@ -189,66 +202,75 @@ class TestJmuxBuilder:
             ]))
         test_jmux_session.windows[0].panes.append(JmuxPane(
             "%2", False, "test"))
-        mock_multiplexer.get.return_value = {}
+        get_returns = {"": ""}, {"pane_id": "%1"}, {
+            "pane_id": "%2"}, {"window_id": "@1"}
+        mock_multiplexer.get.side_effect = get_returns
         mock_multiplexer.create_session.return_value = "$1"
         jmux_builder.build(test_jmux_session)
         assert mock_multiplexer.create_pane.call_count == 4
         assert mock_multiplexer.create_window.call_count == 2
 
     def test_build_creates_tmux_window_with_correct_name(
-            self, jmux_builder, mock_multiplexer, test_jmux_session):
-        mock_multiplexer.get.return_value = {}
+            self, jmux_builder, mock_multiplexer, test_jmux_session,
+            get_returns):
+        mock_multiplexer.get.side_effect = get_returns
         mock_multiplexer.create_session.return_value = "$1"
         jmux_builder.build(test_jmux_session)
         mock_multiplexer.create_window.assert_called_with("test", "$1")
 
     def test_build_creates_tmux_window_with_correct_layout(
-            self, jmux_builder, mock_multiplexer, test_jmux_session):
-        mock_multiplexer.get.return_value = {}
+            self, jmux_builder, mock_multiplexer, test_jmux_session,
+            get_returns):
+        mock_multiplexer.get.side_effect = get_returns
         mock_multiplexer.create_session.return_value = "$1"
         jmux_builder.build(test_jmux_session)
         mock_multiplexer.change_window_layout.assert_called_once()
 
     def test_build_creates_tmux_window_with_correct_focus(
-            self, jmux_builder, mock_multiplexer, test_jmux_session):
-        mock_multiplexer.get.return_value = {}
+            self, jmux_builder, mock_multiplexer, test_jmux_session,
+            get_returns):
+        mock_multiplexer.get.side_effect = get_returns
         mock_multiplexer.create_session.return_value = "$1"
         test_jmux_session.windows[0].focus = False
         jmux_builder.build(test_jmux_session)
         mock_multiplexer.focus_element.assert_not_called()
         test_jmux_session.windows[0].focus = True
+        mock_multiplexer.get.side_effect = get_returns
         jmux_builder.build(test_jmux_session)
         mock_multiplexer.focus_element.assert_called_once()
 
     def test_build_creates_tmux_pane_with_correct_focus(
-            self, jmux_builder, mock_multiplexer, test_jmux_session):
-        mock_multiplexer.get.return_value = {}
+            self, jmux_builder, mock_multiplexer, test_jmux_session,
+            get_returns):
+        mock_multiplexer.get.side_effect = get_returns
         mock_multiplexer.create_session.return_value = "$1"
         test_jmux_session.windows[0].panes[0].focus = False
         jmux_builder.build(test_jmux_session)
         mock_multiplexer.focus_element.assert_not_called()
         test_jmux_session.windows[0].panes[0].focus = True
+        mock_multiplexer.get.side_effect = get_returns
         jmux_builder.build(test_jmux_session)
         mock_multiplexer.focus_element.assert_called_once()
 
     def test_build_creates_tmux_pane_with_correct_current_dir(
-            self, jmux_builder, mock_multiplexer, test_jmux_session):
-        mock_multiplexer.get.return_value = {}
+            self, jmux_builder, mock_multiplexer, test_jmux_session,
+            get_returns):
+        mock_multiplexer.get.side_effect = get_returns
         mock_multiplexer.create_session.return_value = "$1"
         jmux_builder.build(test_jmux_session)
         mock_multiplexer.change_pane_directory.assert_called_once()
 
     def test_build_throws_exception_if_session_window_list_is_empty(
-            self, jmux_builder, mock_multiplexer):
-        mock_multiplexer.get.return_value = {}
+            self, jmux_builder, mock_multiplexer, get_returns):
+        mock_multiplexer.get.side_effect = get_returns
         mock_multiplexer.create_session.return_value = "$1"
         test_jmux_session = JmuxSession("test", "$1", [])
         with pytest.raises(ValueError):
             jmux_builder.build(test_jmux_session)
 
     def test_build_throws_exception_if_window_pane_list_is_empty(
-            self, jmux_builder, mock_multiplexer):
-        mock_multiplexer.get.return_value = {}
+            self, jmux_builder, mock_multiplexer, get_returns):
+        mock_multiplexer.get.side_effect = get_returns
         mock_multiplexer.create_session.return_value = "$1"
         test_jmux_session = JmuxSession("test", "$1", [
             JmuxWindow("test", "@1", "test", False, [])
