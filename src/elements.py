@@ -21,36 +21,38 @@ class JmuxLoader:
         return self._load_session()
 
     def _load_session(self) -> JmuxSession:
-        keys = ["session_name", "session_id", "windows"]
+        keys = ["session_name", "session_id", "session_windows"]
         session_data = self.multiplexer.get(keys)
         windows = self._load_windows(session_data["session_id"],
-                                     int(session_data["windows"]))
+                                     int(session_data["session_windows"]))
         return JmuxSession(session_data["session_name"],
                            session_data["session_id"], windows)
 
     def _load_windows(self, session_id: str,
                       num_windows: int) -> list[JmuxWindow]:
-        return [self._load_window(f"{session_id}:{i}")
+        return [self._load_window(f"{session_id}:{i + 1}")
                 for i in range(num_windows)]
 
     def _load_window(self, target_window: str) -> JmuxWindow:
-        keys = ["window_name", "window_id", "layout", "window_focus", "panes"]
+        keys = ["window_name", "window_id",
+                "window_layout", "window_active", "window_panes"]
         window_data = self.multiplexer.get(keys, target_window)
         panes = self._load_panes(window_data["window_id"],
-                                 int(window_data["panes"]))
+                                 int(window_data["window_panes"]))
         return JmuxWindow(window_data["window_name"], window_data["window_id"],
-                          window_data["layout"],
-                          int(window_data["window_focus"]) == 1, panes)
+                          window_data["window_layout"],
+                          int(window_data["window_active"]) == 1, panes)
 
     def _load_panes(self, window_id: str, num_panes: int) -> list[JmuxPane]:
-        return [self._load_pane(f"{window_id}.{i}") for i in range(num_panes)]
+        return [self._load_pane(
+            f"{window_id}.{i + 1}") for i in range(num_panes)]
 
     def _load_pane(self, target_pane: str) -> JmuxPane:
-        keys = ["pane_id", "pane_focus", "pane_current_dir"]
+        keys = ["pane_id", "pane_active", "pane_current_path"]
         pane_data = self.multiplexer.get(keys, target_pane)
         return JmuxPane(pane_data["pane_id"],
-                        int(pane_data["pane_focus"]) == 1,
-                        pane_data["pane_current_dir"])
+                        int(pane_data["pane_active"]) == 1,
+                        pane_data["pane_current_path"])
 
 
 class JmuxBuilder:
