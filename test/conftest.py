@@ -2,7 +2,7 @@ import subprocess
 
 import pytest
 
-from src.multiplexer import TerminalMultiplexerClient
+from src.multiplexer import Multiplexer
 from src.elements import JmuxLoader, JmuxBuilder
 from src.models import JmuxSession, JmuxWindow, JmuxPane
 
@@ -14,7 +14,7 @@ def mock_shell(mocker):
 
 @pytest.fixture
 def mock_multiplexer(mocker):
-    yield mocker.Mock(spec=TerminalMultiplexerClient)
+    yield mocker.Mock(spec=Multiplexer)
 
 
 @pytest.fixture

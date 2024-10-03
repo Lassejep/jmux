@@ -3,6 +3,10 @@ from dataclasses import dataclass
 
 @dataclass
 class JmuxPane:
+    """
+    Represents a pane in a window.
+    """
+
     id: str
     focus: bool
     current_dir: str
@@ -10,8 +14,12 @@ class JmuxPane:
 
 @dataclass
 class JmuxWindow:
-    name: str
+    """
+    Represents a window in a session.
+    """
+
     id: str
+    name: str
     layout: str
     focus: bool
     panes: list[JmuxPane]
@@ -19,6 +27,20 @@ class JmuxWindow:
 
 @dataclass
 class JmuxSession:
-    name: str
+    """
+    Represents a session in a Tmux terminal multiplexer.
+    """
+
     id: str
+    name: str
     windows: list[JmuxWindow]
+
+
+@dataclass
+class SessionLabel:
+    """
+    A dataclass to store the id and name of a session.
+    """
+
+    id: str
+    name: str

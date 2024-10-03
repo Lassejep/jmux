@@ -1,4 +1,4 @@
-from src.multiplexer import TerminalMultiplexerClient
+from src.multiplexer import Multiplexer
 from src.models import JmuxSession, JmuxWindow, JmuxPane
 
 
@@ -7,7 +7,7 @@ class JmuxLoader:
     Load terminal multiplexer sessions, windows, and panes into Jmux objects.
     """
 
-    def __init__(self, multiplexer: TerminalMultiplexerClient):
+    def __init__(self, multiplexer: Multiplexer):
         self.multiplexer = multiplexer
         if multiplexer is None:
             raise ValueError("Invalid multiplexer")
@@ -61,7 +61,7 @@ class JmuxBuilder:
     from Jmux objects.
     """
 
-    def __init__(self, multiplexer: TerminalMultiplexerClient):
+    def __init__(self, multiplexer: Multiplexer):
         self.multiplexer = multiplexer
         if multiplexer is None:
             raise ValueError("Invalid multiplexer")

@@ -1,27 +1,25 @@
 import os
-from typing import Optional
+import subprocess
+from typing import List
 
-from src.multiplexer import TerminalMultiplexerClient
+from src.models import JmuxPane, JmuxSession, JmuxWindow, SessionLabel
+from src.multiplexer import Multiplexer
 
 
-class TmuxClient(TerminalMultiplexerClient):
+class TmuxClient(Multiplexer):
     """
     Implementation of the TerminalMultiplexerAPI
     for the Tmux terminal multiplexer.
     """
 
-    def __init__(self, shell) -> None:
-        self.shell = shell
+    def __init__(self) -> None:
         self._bin = self._get_binary()
         if not self._bin:
-            raise EnvironmentError("Tmux not found")
+            raise FileNotFoundError("Tmux binary not found")
 
     def _get_binary(self) -> str:
         command = ["which", "tmux"]
-        response = self.shell.run(command, capture_output=True, text=True)
-        if response.returncode != 0:
-            raise self.shell.CalledProcessError(
-                response.returncode, "which tmux")
+        response = subprocess.run(command, capture_output=True, text=True, check=True)
         return response.stdout.strip()
 
     def is_running(self) -> bool:
@@ -33,157 +31,114 @@ class TmuxClient(TerminalMultiplexerClient):
             return True
         return False
 
-    def get(self, keys: list[str],
-            target: Optional[str] = None) -> dict[str, str]:
+    def list_sessions(self) -> list[SessionLabel]:
         """
-        Get the values of `keys` from the `target` pane, window, or session.
+        Get a list of all the currently running sessions.
         """
-        command = [self._bin, "display-message"]
-        if target:
-            if not self._is_valid_target(target):
-                raise ValueError("Invalid target")
-            command.extend(["-t", target])
-        formatted_keys = self._format_keys(keys)
-        command.extend(["-p", formatted_keys])
-        response = self.shell.run(command, capture_output=True, text=True)
-        if response.returncode != 0:
-            raise self.shell.CalledProcessError(response.returncode, command)
-        try:
-            return self._format_response(keys, response.stdout)
-        except ValueError as error:
-            if target:
-                raise ValueError(f"{error} for target: {target}")
-            else:
-                raise ValueError(error)
+        if not self.is_running():
+            return []
+        command = [self._bin, "list-sessions", "-F", "#{session_id}:#{session_name}"]
+        response = subprocess.run(command, capture_output=True, text=True, check=True)
+        sessions = response.stdout.split("\n")
+        return [SessionLabel(*session.split(":")) for session in sessions if session]
 
-    def _format_keys(self, keys: list[str]) -> str:
-        if not keys:
-            raise ValueError("Keys cannot be empty")
-        keys = [f"#{{{key}}}:" for key in keys]
-        return "".join(keys)
+    def get_session(self, session_id: str) -> JmuxSession:
+        """
+        Get the data of the session with the id `session_id`.
+        """
+        sessions = self.list_sessions()
+        for session_label in sessions:
+            if session_label.id == session_id:
+                jmux_windows = self._get_windows(session_id)
+                return JmuxSession(session_label.id, session_label.name, jmux_windows)
+        raise ValueError(f"Session with id {session_id} not found")
 
-    def _format_response(self, keys: list[str],
-                         response: str) -> dict[str, str]:
-        responses = response.split(":")[:-1]
-        for i, value in enumerate(responses):
-            if value.strip() == "":
-                raise ValueError(f"Invalid key: {keys[i]}")
-        return dict(zip(keys, responses))
+    def _get_windows(self, session_id: str) -> list[JmuxWindow]:
+        command = [
+            self._bin,
+            f"list-windows -t {session_id}",
+            "-F",
+            "#{window_id}:#{window_name}:#{window_layout}:#{window_active}",
+        ]
+        response = subprocess.run(command, capture_output=True, text=True, check=True)
+        windows = response.stdout.split("\n")
+        jmux_windows = [
+            self._get_window(window_data) for window_data in windows if window_data
+        ]
+        return jmux_windows
 
-    def create_session(self, session_name: str) -> str:
-        """
-        Create a new session with the name `session_name`.
-        Returns the id of the created session.
-        """
-        if not self._is_valid_name(session_name):
-            raise ValueError("Invalid session name")
-        command = [self._bin, "new-session", "-ds",
-                   session_name, "-PF", "#{session_id}"]
-        response = self.shell.run(
-            command, capture_output=True, text=True, check=True)
-        return response.stdout.strip()
+    def _get_window(self, window_data: str) -> JmuxWindow:
+        window_id, window_name, window_layout, window_active = window_data.split(":")
+        panes: List[JmuxPane] = self._get_panes(window_id)
+        return JmuxWindow(
+            window_id, window_name, window_layout, window_active == "1", panes
+        )
 
-    def create_window(self, window_name: str, target: str) -> str:
-        """
-        Create a new window with the name `window_name`,
-        in the `target` session.
-        Returns the id of the created window.
-        """
-        if not self._is_valid_name(window_name):
-            raise ValueError("Invalid window name")
-        if not self._is_valid_target(target):
-            raise ValueError("Invalid target")
-        command = [self._bin, "new-window", "-t", target, "-kn", window_name,
-                   "-PF", "#{window_id}"]
-        response = self.shell.run(
-            command, capture_output=True, text=True, check=True)
-        return response.stdout.strip()
+    def _get_panes(self, window_id: str) -> list[JmuxPane]:
+        command = [
+            self._bin,
+            f"list-panes -t {window_id}",
+            "-F",
+            "#{pane_id}:#{pane_active}:#{pane_current_path}",
+        ]
+        response = subprocess.run(command, capture_output=True, text=True, check=True)
+        panes = response.stdout.split("\n")
+        jmux_panes = [self._get_pane(pane_data) for pane_data in panes if pane_data]
+        return jmux_panes
 
-    def _is_valid_name(self, name: str) -> bool:
-        illegal_chars = {".", ":", "\t", "\n", "$", "@", "%"}
-        if name.isspace() or not name:
-            return False
-        return all(char not in name for char in illegal_chars)
+    def _get_pane(self, pane_data: str) -> JmuxPane:
+        pane_id, pane_active, pane_current_path = pane_data.split(":")
+        return JmuxPane(pane_id, pane_active == "1", pane_current_path)
 
-    def create_pane(self, target: str) -> str:
+    def create_session(self, session: JmuxSession) -> None:
         """
-        Create a new pane in the `target` window.
-        Returns the id of the created pane.
+        Create a new session with the data in `session`.
         """
-        if not self._is_valid_target(target):
-            raise ValueError("Invalid target")
-        command = [self._bin, "split-window",
-                   "-t", target, "-PF", "#{pane_id}"]
-        response = self.shell.run(
-            command, capture_output=True, text=True, check=True)
-        return response.stdout.strip()
+        command = [
+            self._bin,
+            f"new-session -ds {session.name}",
+            "-PF",
+            "#{session_id}",
+        ]
+        response = subprocess.run(command, capture_output=True, text=True, check=True)
+        session.id = response.stdout.strip()
+        if len(session.windows) == 0:
+            raise ValueError("Session must have at least one window")
+        for window in session.windows:
+            self._create_window(session.id, window)
+        command = [self._bin, f"kill-window -t {session.id}.1"]
+        subprocess.run(command, check=True)
+        command = [self._bin, f"switch-client -t {session.id}"]
+        subprocess.run(command, check=True)
 
-    def focus_element(self, target: str) -> None:
-        """
-        Focus on the `target` pane, window, or session.
-        """
-        if not self._is_valid_target(target):
-            raise ValueError("Invalid target")
-        match target[0]:
-            case "$":
-                action = "switch"
-            case "@":
-                action = "select-window"
-            case "%":
-                action = "select-pane"
-        command = [self._bin, action, "-t", target]
-        self.shell.run(command)
+    def _create_window(self, session_id: str, window: JmuxWindow) -> None:
+        command = [
+            self._bin,
+            f"neww -t {session_id} -n {window.name}",
+            "-PF",
+            "#{window_id}",
+        ]
+        if not window.focus:
+            command.append("-d")
+        response = subprocess.run(command, capture_output=True, text=True, check=True)
+        window.id = response.stdout.strip()
+        if len(window.panes) == 0:
+            raise ValueError("Window must have at least one pane")
+        for pane in window.panes:
+            self._create_pane(window.id, pane)
+        command = [self._bin, f"kill-pane -t {window.id}.1"]
+        subprocess.run(command, check=True)
+        command = [self._bin, f"select-layout -t {window.id}", window.layout]
+        subprocess.run(command, check=True)
 
-    def kill_element(self, target: str) -> None:
-        """
-        Kill the `target` pane, window, or session.
-        """
-        if not self._is_valid_target(target):
-            raise ValueError("Invalid target")
-        match target[0]:
-            case "$":
-                action = "kill-session"
-            case "@":
-                action = "kill-window"
-            case "%":
-                action = "kill-pane"
-        command = [self._bin, action, "-t", target]
-        self.shell.run(command)
-
-    def change_window_layout(self, layout: str, target: str) -> None:
-        """
-        Change the layout of the `target` window.
-        """
-        if not layout:
-            raise ValueError("Layout cannot be empty")
-        if not self._is_valid_target(target):
-            raise ValueError("Invalid target")
-        command = [self._bin, "select-layout", "-t", target, layout]
-        err = self.shell.run(command, capture_output=True, text=True).stderr
-        if "invalid layout" in err:
-            raise ValueError("Invalid layout")
-        elif err != "":
-            print(err)
-            raise self.shell.CalledProcessError(0, command, stderr=err)
-
-    def change_pane_directory(self, directory: str, target: str) -> None:
-        """
-        Change the directory of the `target` pane.
-        """
-        if not directory:
-            raise ValueError("Directory cannot be empty")
-        if not self._is_valid_target(target):
-            raise ValueError("Invalid target")
-        command = [self._bin, "send-keys", "-t",
-                   target, f"cd {directory}", "C-m", "C-l"]
-        err = self.shell.run(command, capture_output=True, text=True).stderr
-        if "can't find pane" in err:
-            raise ValueError("Invalid target")
-        elif err != "":
-            raise self.shell.CalledProcessError(err)
-
-    def _is_valid_target(self, target: str) -> bool:
-        if not target:
-            return False
-        valid_chars = {"$", "@", "%"}
-        return any(target.startswith(char) for char in valid_chars)
+    def _create_pane(self, window_id: str, pane: JmuxPane) -> None:
+        command = [
+            self._bin,
+            f"splitw -t {window_id} -c {pane.current_dir}",
+            "-PF",
+            "#{pane_id}",
+        ]
+        if not pane.focus:
+            command.append("-d")
+        response = subprocess.run(command, capture_output=True, text=True, check=True)
+        pane.id = response.stdout.strip()
