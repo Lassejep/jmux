@@ -24,7 +24,7 @@ class TmuxClient(Multiplexer):
 
     def is_running(self) -> bool:
         """
-        Check if the Tmux terminal multiplexer is running.
+        Check if tmux is running.
         """
         env = os.environ.copy()
         if "TMUX" in env and env["TMUX"] != "":
@@ -44,7 +44,7 @@ class TmuxClient(Multiplexer):
 
     def get_session(self, session_id: str) -> JmuxSession:
         """
-        Get the data of the session with the id `session_id`.
+        Get the data of the tmux session with the id `session_id`.
         """
         sessions = self.list_sessions()
         for session_label in sessions:
@@ -92,7 +92,7 @@ class TmuxClient(Multiplexer):
 
     def create_session(self, session: JmuxSession) -> None:
         """
-        Create a new session with the data in `session`.
+        Create a new session in tmux with the data in `session`.
         """
         command = [
             self._bin,
