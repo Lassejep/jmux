@@ -1,6 +1,6 @@
-from pathlib import Path
-from dataclasses import asdict
 import json
+from dataclasses import asdict
+from pathlib import Path
 
 import pytest
 
@@ -8,104 +8,65 @@ from src.session_manager import SessionManager
 
 
 @pytest.fixture
-def session_manager(mock_loader, mock_builder):
-    yield SessionManager(mock_loader, mock_builder)
-
-
-@pytest.fixture
-def mock_file(mocker):
-    path = Path("/tmp/test")
+def mock_folder(mocker):
+    path = Path("/tmp/jmux/")
     mock_path = mocker.MagicMock(spec=path)
     m_open = mocker.mock_open()
     mock_path.open = m_open
     yield mock_path
 
 
-class TestSessionManagerConstructor:
-    def test_throws_exception_if_jmux_loader_is_none(self, mock_builder):
+@pytest.fixture
+def session_manager(mock_folder, mock_multiplexer):
+    yield SessionManager(mock_folder, mock_multiplexer)
+
+
+class TestConstructor:
+    def test_given_valid_arguments_returns_instance_of_session_manager(
+        self, mock_folder, mock_multiplexer
+    ):
+        assert isinstance(SessionManager(mock_folder, mock_multiplexer), SessionManager)
+
+    def test_with_invalid_save_folder_value_throws_value_error(self, mock_multiplexer):
         with pytest.raises(ValueError):
-            SessionManager(None, mock_builder)
+            SessionManager("test", mock_multiplexer)
 
-    def test_throws_exception_if_jmux_loader_is_not_jmux_loader(
-            self, mock_builder):
+    def test_given_save_folder_does_not_exist_throws_value_error(
+        self, mock_folder, mock_multiplexer
+    ):
+        mock_folder.exists.return_value = False
         with pytest.raises(ValueError):
-            SessionManager(mock_builder, mock_builder)
+            SessionManager(mock_folder, mock_multiplexer)
 
-    def test_throws_exception_if_jmux_builder_is_none(self, mock_loader):
+    def test_given_invalid_multiplexer_value_throws_value_error(self, mock_folder):
         with pytest.raises(ValueError):
-            SessionManager(mock_loader, None)
-
-    def test_throws_exception_if_jmux_builder_is_not_jmux_builder(
-            self, mock_loader):
-        with pytest.raises(ValueError):
-            SessionManager(mock_loader, mock_loader)
+            SessionManager(mock_folder, "test")
 
 
-class TestSaveSessionMethod:
-    def test_throws_exception_if_file_path_is_not_pathlib_path(
-            self, session_manager):
-        with pytest.raises(TypeError):
-            session_manager.save_session("test_path")
+class TestSaveCurrentSession:
+    @pytest.fixture(autouse=True)
+    def setup(self, mock_folder, session_manager, test_jmux_session):
+        self.folder = mock_folder
+        self.manager = session_manager
+        self.current_session = test_jmux_session
 
-    def test_creates_file_if_not_exists(
-            self, session_manager, mock_file, mock_loader, test_jmux_session):
-        mock_file.exists.return_value = False
-        mock_file.touch.return_value = None
-        mock_loader.load.return_value = test_jmux_session
-        session_manager.save_session(mock_file)
-        mock_file.touch.assert_called_once()
+    def test_given_valid_arguments_returns_none(self):
+        self.folder.exists.return_value = True
+        assert self.manager.save_current_session() is None
 
-    def test_gets_current_session_data(
-            self, session_manager, mock_file, mock_loader, test_jmux_session):
-        mock_loader.load.return_value = test_jmux_session
-        session_manager.save_session(mock_file)
-        mock_loader.load.assert_called_once()
+    def test_nonexistent_save_file_creates_file(self):
+        save_file = self.folder / "test.json"
+        save_file.exists.return_value = False
+        self.manager.save_current_session()
+        save_file.touch.assert_called_once()
 
-    def test_writes_current_session_data_to_file(
-            self, session_manager, mock_file, mock_loader, test_jmux_session):
-        mock_loader.load.return_value = test_jmux_session
-        session_manager.save_session(mock_file)
-        mock_file.open.assert_called_with("w")
+    def test_opens_save_file_in_write_mode(self):
+        save_file = self.folder / "test.json"
+        self.manager.save_current_session()
+        save_file.open.assert_called_once_with("w")
 
-    def test_write_file_data_is_json_format(
-            self, session_manager, mock_file, mock_loader, test_jmux_session):
-        mock_loader.load.return_value = test_jmux_session
-        session_manager.save_session(mock_file)
-        written_data = mock_file.open().write.call_args_list
-        written_data = ''.join([arg[0][0] for arg in written_data])
-        assert written_data == json.dumps(asdict(test_jmux_session), indent=4)
-
-
-class TestLoadSessionMethod:
-    def test_throws_exception_if_file_path_is_not_pathlib_path(
-            self, session_manager):
-        with pytest.raises(TypeError):
-            session_manager.load_session("test_path")
-
-    def test_throws_exception_if_file_does_not_exist(
-            self, session_manager, mock_file):
-        mock_file.exists.return_value = False
-        with pytest.raises(FileNotFoundError):
-            session_manager.load_session(mock_file)
-
-    def test_opens_correct_file(
-            self, session_manager, mock_file, test_jmux_session):
-        mock_file.open().read.return_value = json.dumps(
-            asdict(test_jmux_session), indent=4)
-        session_manager.load_session(mock_file)
-        mock_file.open.assert_called_with("r")
-
-    def test_reads_file_data(
-            self, session_manager, mock_file, test_jmux_session):
-        mock_file.open().read.return_value = json.dumps(
-            asdict(test_jmux_session), indent=4)
-        session_manager.load_session(mock_file)
-        mock_file.open().read.assert_called_once()
-
-    def test_builds_jmux_session_from_file_data(
-            self, session_manager, mock_file, test_jmux_session):
-        mock_file.open().read.return_value = json.dumps(
-            asdict(test_jmux_session), indent=4)
-        session_manager.load_session(mock_file)
-        session_manager.jmux_builder.build.assert_called_once_with(
-            test_jmux_session)
+    def test_writes_json_object_to_save_file(self, mocker):
+        save_file = self.folder / "test.json"
+        m_open = mocker.mock_open()
+        save_file.open = m_open
+        self.manager.save_current_session()

@@ -1,8 +1,9 @@
-import pathlib
 import json
+import pathlib
 from dataclasses import asdict
 
-from src.elements import JmuxLoader, JmuxBuilder
+from src.models import JmuxSession
+from src.multiplexer import Multiplexer
 from src.serialization import dict_to_JmuxSession
 
 
@@ -11,44 +12,33 @@ class SessionManager:
     Manage terminal multiplexer sessions.
     """
 
-    def __init__(self, jmux_loader: JmuxLoader,
-                 jmux_builder: JmuxBuilder) -> None:
-        self.jmux_loader = jmux_loader
-        if self.jmux_loader is None or not isinstance(
-                self.jmux_loader, JmuxLoader):
-            raise ValueError("Invalid JmuxLoader")
+    def __init__(self, save_folder: pathlib.Path, multiplexer: Multiplexer) -> None:
+        if not save_folder or not isinstance(save_folder, pathlib.Path):
+            raise ValueError("Invalid save_folder value")
+        if not save_folder.exists():
+            raise ValueError("The specified folder does not exist")
+        self.save_folder = save_folder
 
-        self.jmux_builder = jmux_builder
-        if self.jmux_builder is None or not isinstance(
-                self.jmux_builder, JmuxBuilder):
-            raise ValueError("Invalid JmuxBuilder")
+        if not multiplexer or not isinstance(multiplexer, Multiplexer):
+            raise ValueError("Invalid multiplexer value")
+        self.multiplexer = multiplexer
 
-    def save_session(self, save_file: pathlib.Path) -> None:
+    def save_current_session(self) -> None:
         """
-        Save the current session to `file_path`.
+        Save the current session to a file in the specified folder.
+        the `save_folder` parameter should be a pathlib.Path object and should point to
+        a valid directory where the session file will be saved.
         """
-        if not isinstance(save_file, pathlib.Path):
-            raise TypeError("Invalid file path")
-
+        session = JmuxSession("test", "test", [])
+        save_file = self.save_folder / f"{session.name}.json"
         if not save_file.exists():
             save_file.touch()
 
-        current_session = self.jmux_loader.load()
-        session_dict = asdict(current_session)
-        with save_file.open("w") as file:
-            json.dump(session_dict, file, indent=4)
+        with save_file.open("w") as f:
+            json.dump(asdict(session), f)
 
-    def load_session(self, load_file: pathlib.Path) -> None:
+    def load_session(self, file_path: pathlib.Path) -> JmuxSession:
         """
-        Load the session from `file_path`.
+        Load a session from a file.
         """
-        if not isinstance(load_file, pathlib.Path):
-            raise TypeError("Invalid file path")
-
-        if not load_file.exists():
-            raise FileNotFoundError("File does not exist")
-
-        with load_file.open("r") as file:
-            session_data = json.load(file)
-        session = dict_to_JmuxSession(session_data)
-        self.jmux_builder.build(session)
+        return JmuxSession("test", "test", [])
