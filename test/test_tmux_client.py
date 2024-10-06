@@ -305,3 +305,20 @@ class TestCreateSession:
         expected_call = mocker.call(command, check=True)
         call_count = mock_subprocess.mock_calls.count(expected_call)
         assert call_count == 1
+
+
+class TestGetCurrentSessionId:
+    def test_raises_ValueError_if_no_session_is_running(self, tmux, mocker):
+        mocker.patch.object(TmuxClient, "is_running", return_value=False)
+        with pytest.raises(ValueError):
+            tmux.get_current_session_id()
+
+    def test_returns_SessionLabel(self, tmux, mock_subprocess):
+        mock_subprocess.return_value.stdout = "$1:default"
+        assert isinstance(tmux.get_current_session_id(), SessionLabel)
+
+    def test_returns_SessionLabel_with_correct_id_and_name(self, tmux, mock_subprocess):
+        mock_subprocess.return_value.stdout = "$1:default"
+        session = tmux.get_current_session_id()
+        assert session.id == "$1"
+        assert session.name == "default"

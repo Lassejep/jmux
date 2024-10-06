@@ -1,7 +1,7 @@
 import abc
 from typing import List
 
-from src.models import SessionLabel, JmuxSession
+from src.models import JmuxSession, SessionLabel
 
 
 class Multiplexer(abc.ABC):
@@ -21,6 +21,13 @@ class Multiplexer(abc.ABC):
     def list_sessions(self) -> List[SessionLabel]:
         """
         Get a list of all the currently running sessions.
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_current_session_id(self) -> SessionLabel:
+        """
+        Get the name and id of the currently running session.
         """
         raise NotImplementedError
 

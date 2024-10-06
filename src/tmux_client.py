@@ -142,3 +142,14 @@ class TmuxClient(Multiplexer):
             command.append("-d")
         response = subprocess.run(command, capture_output=True, text=True, check=True)
         pane.id = response.stdout.strip()
+
+    def get_current_session_id(self) -> SessionLabel:
+        """
+        Get the data of the currently running tmux session.
+        """
+        if not self.is_running():
+            raise ValueError("No session is currently running")
+        command = [self._bin, "display-message", "-p", "#{session_id}:#{session_name}"]
+        response = subprocess.run(command, capture_output=True, text=True, check=True)
+        session_id, session_name = response.stdout.strip().split(":")
+        return SessionLabel(session_id, session_name)
