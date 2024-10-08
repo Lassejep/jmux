@@ -109,3 +109,10 @@ class TestLoadSession:
 
     def test_returns_JmuxSession_with_correct_data(self):
         assert self.manager.load_session("test") == self.jmux_session
+
+    def test_given_valid_arguments_builds_session(self, mocker):
+        mocker.patch("json.load", return_value=asdict(self.jmux_session))
+        self.manager.load_session("test")
+        self.manager.multiplexer.create_session.assert_called_once_with(
+            self.jmux_session
+        )

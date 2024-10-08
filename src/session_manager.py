@@ -51,6 +51,7 @@ class SessionManager:
         if not session_file.exists():
             raise FileNotFoundError(f"Session file {session_name} does not exist")
         with session_file.open("r") as file:
-            session_data = json.load(file, indent=4)
+            session_data = json.load(file)
         session = dict_to_JmuxSession(session_data)
+        self.multiplexer.create_session(session)
         return session
