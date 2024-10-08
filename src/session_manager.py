@@ -26,15 +26,15 @@ class SessionManager:
     def save_current_session(self) -> None:
         """
         Save the current session to a file in the specified folder.
-        the `sessions_folder` parameter should be a pathlib.Path object and should point to
-        a valid directory where the session file will be saved.
+        the `sessions_folder` parameter should be a pathlib.Path object and should point
+        to a valid directory where the session file will be saved.
         """
         current_session_label = self.multiplexer.get_current_session_id()
         self.save_session(current_session_label.id)
 
     def save_session(self, session_id: str) -> None:
         """
-        Save the session with the id `session_id` to a file in the specified folder.
+        Save the session with the id `session_id` to a file in the sessions folder.
         """
         session = self.multiplexer.get_session(session_id)
         save_file = self.sessions_folder / f"{session.name}.json"
@@ -45,12 +45,12 @@ class SessionManager:
 
     def load_session(self, session_name: str) -> JmuxSession:
         """
-        Load a session from a file.
+        Load the session with the name `session_name` from the sessions folder.
         """
         session_file = self.sessions_folder / f"{session_name}.json"
         if not session_file.exists():
             raise FileNotFoundError(f"Session file {session_name} does not exist")
         with session_file.open("r") as file:
-            session_data = json.load(file)
+            session_data = json.load(file, indent=4)
         session = dict_to_JmuxSession(session_data)
         return session
