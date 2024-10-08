@@ -1,8 +1,16 @@
 import pytest
 
-from src.serialization import dict_to_JmuxSession
-from src.serialization import dict_to_JmuxWindow
-from src.serialization import dict_to_JmuxPane
+from src.models import JmuxPane, JmuxSession, JmuxWindow
+from src.serialization import (dict_to_JmuxPane, dict_to_JmuxSession,
+                               dict_to_JmuxWindow)
+
+
+@pytest.fixture
+def test_jmux_session():
+    pane = JmuxPane(id="%1", focus=0, current_dir="test")
+    window = JmuxWindow(name="test", id="@1", layout="test", focus=0, panes=[pane])
+    session = JmuxSession(name="test", id="$1", windows=[window])
+    yield session
 
 
 @pytest.fixture
@@ -13,15 +21,19 @@ def test_pane_data():
 
 @pytest.fixture
 def test_window_data(test_pane_data):
-    window_data = {"name": "test", "id": "@1", "layout": "test",
-                   "focus": 0, "panes": [test_pane_data]}
+    window_data = {
+        "name": "test",
+        "id": "@1",
+        "layout": "test",
+        "focus": 0,
+        "panes": [test_pane_data],
+    }
     yield window_data
 
 
 @pytest.fixture
 def test_session_data(test_window_data):
-    session_data = {"name": "test",
-                    "id": "$1", "windows": [test_window_data]}
+    session_data = {"name": "test", "id": "$1", "windows": [test_window_data]}
     yield session_data
 
 
