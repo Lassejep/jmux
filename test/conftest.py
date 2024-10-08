@@ -1,14 +1,7 @@
-import subprocess
-
 import pytest
 
 from src.models import JmuxPane, JmuxSession, JmuxWindow
 from src.multiplexer import Multiplexer
-
-
-@pytest.fixture()
-def mock_shell(mocker):
-    yield mocker.Mock(spec=subprocess)
 
 
 @pytest.fixture
@@ -23,18 +16,18 @@ def session_data():
         "window_name": "test",
         "window_id": "@1",
         "window_layout": "test",
-        "window_active": 0,
+        "window_active": 1,
         "window_panes": 1,
     }
-    pane_data = {"pane_id": "%1", "pane_active": 0, "pane_current_path": "test"}
+    pane_data = {"pane_id": "%1", "pane_active": 1, "pane_current_path": "test"}
     yield session_data, window_data, pane_data
 
 
 @pytest.fixture
 def test_jmux_session():
     session = JmuxSession(
-        "test",
         "$1",
-        [JmuxWindow("test", "@1", "test", False, [JmuxPane("%1", False, "test")])],
+        "test",
+        [JmuxWindow("@1", "test", "test", True, [JmuxPane("%1", True, "/tmp/jmux")])],
     )
     yield session

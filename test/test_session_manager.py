@@ -4,25 +4,19 @@ from pathlib import Path
 
 import pytest
 
+from src.models import JmuxSession
 from src.session_manager import SessionManager
 
 
 @pytest.fixture
 def mock_folder(mocker):
-    path = Path("/tmp/jmux/")
-    mock_path = mocker.MagicMock(spec=path)
+    mock_path_instance = mocker.MagicMock(spec=Path)
+    mocker.patch.object(Path, "__new__", return_value=mock_path_instance)
+    mock_path_instance.__truediv__.return_value = Path("/tmp/jmux/test.json")
+    mock_path_instance.__str__.return_value = "/tmp/jmux/test.json"
     m_open = mocker.mock_open()
-    mock_path.open = m_open
-    yield mock_path
-
-
-@pytest.fixture
-def mock_session_file(mocker):
-    file = Path("/tmp/jmux/test.json")
-    mock_file = mocker.MagicMock(spec=file)
-    m_open = mocker.mock_open()
-    mock_file.open = m_open
-    yield mock_file
+    mock_path_instance.open = m_open
+    yield mock_path_instance
 
 
 @pytest.fixture
@@ -54,14 +48,11 @@ class TestConstructor:
 
 class TestSaveCurrentSession:
     @pytest.fixture(autouse=True)
-    def setup(
-        self, mock_folder, session_manager, test_jmux_session, mock_session_file, mocker
-    ):
+    def setup(self, mock_folder, session_manager, test_jmux_session):
         self.folder = mock_folder
-        self.file = mock_session_file
+        self.file = mock_folder / "test.json"
         self.manager = session_manager
         self.current_session = test_jmux_session
-        mocker.patch.object(SessionManager, "_create_save_file", return_value=self.file)
         self.manager.multiplexer.get_session.return_value = self.current_session
 
     def test_given_valid_arguments_returns_none(self):
@@ -93,3 +84,28 @@ class TestSaveCurrentSession:
             call[0][0] for call in self.file.open().write.call_args_list
         )
         assert json.loads(written_data) == asdict(self.current_session)
+
+
+class TestLoadSession:
+    @pytest.fixture(autouse=True)
+    def setup(self, mock_folder, session_manager, test_jmux_session, mocker):
+        self.folder = mock_folder
+        self.manager = session_manager
+        self.session_file = mock_folder / "test.json"
+        self.jmux_session = test_jmux_session
+        mocker.patch("json.load", return_value=asdict(self.jmux_session))
+
+    def test_given_valid_arguments_returns_instance_of_JmuxSession(self):
+        assert isinstance(self.manager.load_session("test"), JmuxSession)
+
+    def test_throws_file_not_found_error_if_session_file_does_not_exist(self):
+        self.session_file.exists.return_value = False
+        with pytest.raises(FileNotFoundError):
+            self.manager.load_session("test")
+
+    def test_opens_session_file_in_read_mode(self):
+        self.manager.load_session("test")
+        self.session_file.open.assert_called_once_with("r")
+
+    def test_returns_JmuxSession_with_correct_data(self):
+        assert self.manager.load_session("test") == self.jmux_session

@@ -12,12 +12,12 @@ class SessionManager:
     Manage terminal multiplexer sessions.
     """
 
-    def __init__(self, save_folder: pathlib.Path, multiplexer: Multiplexer) -> None:
-        if not save_folder or not isinstance(save_folder, pathlib.Path):
-            raise ValueError("Invalid save_folder value")
-        if not save_folder.exists():
+    def __init__(self, sessions_folder: pathlib.Path, multiplexer: Multiplexer) -> None:
+        if not sessions_folder or not isinstance(sessions_folder, pathlib.Path):
+            raise ValueError("Invalid sessions_folder value")
+        if not sessions_folder.exists():
             raise ValueError("The specified folder does not exist")
-        self.save_folder = save_folder
+        self.sessions_folder = sessions_folder
 
         if not multiplexer or not isinstance(multiplexer, Multiplexer):
             raise ValueError("Invalid multiplexer value")
@@ -26,7 +26,7 @@ class SessionManager:
     def save_current_session(self) -> None:
         """
         Save the current session to a file in the specified folder.
-        the `save_folder` parameter should be a pathlib.Path object and should point to
+        the `sessions_folder` parameter should be a pathlib.Path object and should point to
         a valid directory where the session file will be saved.
         """
         current_session_label = self.multiplexer.get_current_session_id()
@@ -37,21 +37,20 @@ class SessionManager:
         Save the session with the id `session_id` to a file in the specified folder.
         """
         session = self.multiplexer.get_session(session_id)
-        save_file = self._create_save_file(session.name)
+        save_file = self.sessions_folder / f"{session.name}.json"
+        if not save_file.exists():
+            save_file.touch()
         with save_file.open("w") as file:
             json.dump(asdict(session), file, indent=4)
 
-    def _create_save_file(self, session_name: str) -> pathlib.Path:
-        """
-        Create a file path for the session.
-        """
-        save_file = self.save_folder / session_name
-        if not save_file.exists():
-            save_file.touch()
-        return save_file
-
-    def load_session(self, file_path: pathlib.Path) -> JmuxSession:
+    def load_session(self, session_name: str) -> JmuxSession:
         """
         Load a session from a file.
         """
-        return JmuxSession("test", "test", [])
+        session_file = self.sessions_folder / f"{session_name}.json"
+        if not session_file.exists():
+            raise FileNotFoundError(f"Session file {session_name} does not exist")
+        with session_file.open("r") as file:
+            session_data = json.load(file)
+        session = dict_to_JmuxSession(session_data)
+        return session
