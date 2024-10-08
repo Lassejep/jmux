@@ -1,46 +1,37 @@
 #!/usr/bin/env python3
-
 import argparse
-import subprocess
 import pathlib
 
-from src import tmux_client
-from src import elements
-from src import session_manager
+from src import session_manager, tmux_client
 
 
-def getfilepath(name):
-    jmux_dir = pathlib.Path.home() / ".jmux"
-    if not jmux_dir.exists():
-        jmux_dir.mkdir()
-    path = jmux_dir / f"{name}.json"
-    return path
+def create_manager(sessions_dir=None):
+    client = tmux_client.TmuxClient()
+    return session_manager.SessionManager(sessions_dir, client)
 
 
-def create_manager():
-    tmux = tmux_client.TmuxClient(subprocess)
-    loader = elements.JmuxLoader(tmux)
-    builder = elements.JmuxBuilder(tmux)
-    return session_manager.SessionManager(loader, builder)
-
-
-def main(action):
-    manager = create_manager()
+def main(action, sessions_dir):
+    manager = create_manager(sessions_dir)
     match action:
         case "save":
-            file_path = getfilepath("current")
-            manager.save_session(file_path)
+            manager.save_current_session()
         case "load":
             session_name = input("Enter session name: ")
-            file_path = getfilepath(session_name)
-            manager.load_session(file_path)
+            manager.load_session(session_name)
         case _:
             raise ValueError(f"Invalid action: {action}")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("run", choices=("save", "load"),
-                        help="Action to perform")
+    parser.add_argument("run", choices=("save", "load"), help="Action to perform")
+    parser.add_argument(
+        "-d",
+        "--sessions-dir",
+        help="Directory to store session files",
+        default="~/.jmux/",
+    )
     args = parser.parse_args()
-    main(args.run)
+    sessions_dir = pathlib.Path(args.sessions_dir).expanduser()
+    action = args.run
+    main(action, sessions_dir)
