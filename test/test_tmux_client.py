@@ -230,7 +230,9 @@ class TestCreateSession:
         tmux.create_session(test_session)
         command = [
             "/usr/bin/tmux",
-            f"new-session -ds {test_session.name}",
+            "new-session",
+            "-ds",
+            test_session.name,
             "-PF",
             "#{session_id}",
         ]
@@ -242,7 +244,7 @@ class TestCreateSession:
         self, tmux, mock_subprocess, test_session, mocker
     ):
         tmux.create_session(test_session)
-        command = ["/usr/bin/tmux", f"switch-client -t {test_session.id}"]
+        command = ["/usr/bin/tmux", "switch-client", "-t", test_session.id]
         expected_call = mocker.call(command, check=True)
         call_count = mock_subprocess.mock_calls.count(expected_call)
         assert call_count == 1
@@ -253,7 +255,11 @@ class TestCreateSession:
         tmux.create_session(test_session)
         command = [
             "/usr/bin/tmux",
-            f"neww -t {test_session.id} -n {test_session.windows[0].name}",
+            "neww",
+            "-t",
+            test_session.id,
+            "-n",
+            test_session.windows[0].name,
             "-PF",
             "#{window_id}",
         ]
@@ -269,7 +275,11 @@ class TestCreateSession:
         pane_dir = test_session.windows[0].panes[0].current_dir
         command = [
             "/usr/bin/tmux",
-            f"splitw -t {window_id} -c {pane_dir}",
+            "splitw",
+            "-t",
+            window_id,
+            "-c",
+            pane_dir,
             "-PF",
             "#{pane_id}",
         ]
@@ -283,7 +293,7 @@ class TestCreateSession:
         tmux.create_session(test_session)
         window_id = test_session.windows[0].id
         layout = test_session.windows[0].layout
-        command = ["/usr/bin/tmux", f"select-layout -t {window_id}", layout]
+        command = ["/usr/bin/tmux", "select-layout", "-t", window_id, layout]
         expected_call = mocker.call(command, check=True)
         call_count = mock_subprocess.mock_calls.count(expected_call)
         assert call_count == 1
@@ -292,7 +302,7 @@ class TestCreateSession:
         self, tmux, mock_subprocess, test_session, mocker
     ):
         tmux.create_session(test_session)
-        command = ["/usr/bin/tmux", f"kill-window -t {test_session.id}.1"]
+        command = ["/usr/bin/tmux", "kill-window", "-t", f"{test_session.id}:1"]
         expected_call = mocker.call(command, check=True)
         call_count = mock_subprocess.mock_calls.count(expected_call)
         assert call_count == 1
@@ -301,7 +311,12 @@ class TestCreateSession:
         self, tmux, mock_subprocess, test_session, mocker
     ):
         tmux.create_session(test_session)
-        command = ["/usr/bin/tmux", f"kill-pane -t {test_session.windows[0].id}.1"]
+        command = [
+            "/usr/bin/tmux",
+            "kill-pane",
+            "-t",
+            f"{test_session.windows[0].id}.1",
+        ]
         expected_call = mocker.call(command, check=True)
         call_count = mock_subprocess.mock_calls.count(expected_call)
         assert call_count == 1

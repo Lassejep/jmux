@@ -56,7 +56,9 @@ class TmuxClient(Multiplexer):
     def _get_windows(self, session_id: str) -> list[JmuxWindow]:
         command = [
             self._bin,
-            f"list-windows -t {session_id}",
+            "list-windows",
+            "-t",
+            session_id,
             "-F",
             "#{window_id}:#{window_name}:#{window_layout}:#{window_active}",
         ]
@@ -77,7 +79,9 @@ class TmuxClient(Multiplexer):
     def _get_panes(self, window_id: str) -> list[JmuxPane]:
         command = [
             self._bin,
-            f"list-panes -t {window_id}",
+            "list-panes",
+            "-t",
+            window_id,
             "-F",
             "#{pane_id}:#{pane_active}:#{pane_current_path}",
         ]
@@ -96,7 +100,9 @@ class TmuxClient(Multiplexer):
         """
         command = [
             self._bin,
-            f"new-session -ds {session.name}",
+            "new-session",
+            "-ds",
+            session.name,
             "-PF",
             "#{session_id}",
         ]
@@ -106,15 +112,19 @@ class TmuxClient(Multiplexer):
             raise ValueError("Session must have at least one window")
         for window in session.windows:
             self._create_window(session.id, window)
-        command = [self._bin, f"kill-window -t {session.id}.1"]
+        command = [self._bin, "kill-window", "-t", f"{session.id}:1"]
         subprocess.run(command, check=True)
-        command = [self._bin, f"switch-client -t {session.id}"]
+        command = [self._bin, "switch-client", "-t", session.id]
         subprocess.run(command, check=True)
 
     def _create_window(self, session_id: str, window: JmuxWindow) -> None:
         command = [
             self._bin,
-            f"neww -t {session_id} -n {window.name}",
+            "neww",
+            "-t",
+            session_id,
+            "-n",
+            window.name,
             "-PF",
             "#{window_id}",
         ]
@@ -126,15 +136,19 @@ class TmuxClient(Multiplexer):
             raise ValueError("Window must have at least one pane")
         for pane in window.panes:
             self._create_pane(window.id, pane)
-        command = [self._bin, f"kill-pane -t {window.id}.1"]
+        command = [self._bin, "kill-pane", "-t", f"{window.id}.1"]
         subprocess.run(command, check=True)
-        command = [self._bin, f"select-layout -t {window.id}", window.layout]
+        command = [self._bin, "select-layout", "-t", window.id, window.layout]
         subprocess.run(command, check=True)
 
     def _create_pane(self, window_id: str, pane: JmuxPane) -> None:
         command = [
             self._bin,
-            f"splitw -t {window_id} -c {pane.current_dir}",
+            "splitw",
+            "-t",
+            window_id,
+            "-c",
+            pane.current_dir,
             "-PF",
             "#{pane_id}",
         ]
