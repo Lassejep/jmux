@@ -94,6 +94,7 @@ class TestLoadSession:
         self.session_file = mock_folder / "test.json"
         self.jmux_session = test_jmux_session
         mocker.patch("json.load", return_value=asdict(self.jmux_session))
+        mocker.patch.object(self.manager.multiplexer, "list_sessions", return_value=[])
 
     def test_given_valid_arguments_returns_instance_of_JmuxSession(self):
         assert isinstance(self.manager.load_session("test"), JmuxSession)
@@ -101,6 +102,13 @@ class TestLoadSession:
     def test_throws_file_not_found_error_if_session_file_does_not_exist(self):
         self.session_file.exists.return_value = False
         with pytest.raises(FileNotFoundError):
+            self.manager.load_session("test")
+
+    def test_throws_value_error_if_session_already_exists(self, mocker):
+        mocker.patch.object(
+            self.manager.multiplexer, "list_sessions", return_value=[self.jmux_session]
+        )
+        with pytest.raises(ValueError):
             self.manager.load_session("test")
 
     def test_opens_session_file_in_read_mode(self):

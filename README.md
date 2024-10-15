@@ -44,7 +44,7 @@ You will have to manually switch to the tmux session after loading it.
 - Pytest-mock 3.14.0 or newer
 
 ## TODO
-- [ ] Fix bug where the program doesn't recognize already running tmux session.
+- [x] Fix bug where the program doesn't recognize already running tmux session.
 - [ ] Add the ability to delete saved sessions
 - [ ] Add the ability to rename saved sessions
 - [ ] Create a small GUI for the program

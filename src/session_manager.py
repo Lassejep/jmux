@@ -50,6 +50,13 @@ class SessionManager:
         session_file = self.sessions_folder / f"{session_name}.json"
         if not session_file.exists():
             raise FileNotFoundError(f"Session file {session_name} does not exist")
+        if not all(
+            [
+                session_name != session_label.name
+                for session_label in self.multiplexer.list_sessions()
+            ]
+        ):
+            raise ValueError(f"Session {session_name} already exists")
         with session_file.open("r") as file:
             session_data = json.load(file)
         session = dict_to_JmuxSession(session_data)
