@@ -150,7 +150,8 @@ class TestDeleteSessionFile:
         mocker.patch.object(
             self.manager.multiplexer, "list_sessions", return_value=[test_jmux_session]
         )
-        self.manager.delete_session_file("test")
-        self.manager.multiplexer.kill_session.assert_called_once_with(
-            test_jmux_session.id
+        mocker.patch.object(
+            self.manager.multiplexer, "get_session", return_value=test_jmux_session
         )
+        self.manager.delete_session_file("test")
+        self.manager.multiplexer.kill_session.assert_called_once_with(test_jmux_session)

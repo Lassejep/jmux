@@ -73,11 +73,11 @@ class SessionManager:
         session_file.unlink()
         session = next(
             (
-                session
-                for session in self.multiplexer.list_sessions()
-                if session.name == session_name
+                self.multiplexer.get_session(session_label.id)
+                for session_label in self.multiplexer.list_sessions()
+                if session_label.name == session_name
             ),
             None,
         )
         if session:
-            self.multiplexer.kill_session(session.id)
+            self.multiplexer.kill_session(session)
