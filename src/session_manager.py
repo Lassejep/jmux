@@ -63,7 +63,7 @@ class SessionManager:
         self.multiplexer.create_session(session)
         return session
 
-    def delete_session_file(self, session_name: str) -> None:
+    def delete_session(self, session_name: str) -> None:
         """
         Delete the session with the name `session_name` from the sessions folder.
         """
