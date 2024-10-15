@@ -62,3 +62,12 @@ class SessionManager:
         session = dict_to_JmuxSession(session_data)
         self.multiplexer.create_session(session)
         return session
+
+    def delete_session_file(self, session_name: str) -> None:
+        """
+        Delete the session with the name `session_name` from the sessions folder.
+        """
+        session_file = self.sessions_folder / f"{session_name}.json"
+        if not session_file.exists():
+            raise FileNotFoundError(f"Session file {session_name} does not exist")
+        session_file.unlink()

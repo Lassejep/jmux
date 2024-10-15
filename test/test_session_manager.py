@@ -124,3 +124,24 @@ class TestLoadSession:
         self.manager.multiplexer.create_session.assert_called_once_with(
             self.jmux_session
         )
+
+
+class TestDeleteSessionFile:
+    @pytest.fixture(autouse=True)
+    def setup(self, mock_folder, session_manager, mocker):
+        self.folder = mock_folder
+        self.manager = session_manager
+        self.session_file = mock_folder / "test.json"
+        mocker.patch.object(self.manager.multiplexer, "list_sessions", return_value=[])
+
+    def test_throws_file_not_found_error_if_session_file_does_not_exist(self):
+        self.session_file.exists.return_value = False
+        with pytest.raises(FileNotFoundError):
+            self.manager.delete_session_file("test")
+
+    def test_returns_none_given_valid_arguments(self):
+        assert self.manager.delete_session_file("test") is None
+
+    def test_deletes_session_file(self):
+        self.manager.delete_session_file("test")
+        self.session_file.unlink.assert_called_once()
