@@ -45,7 +45,7 @@ You will have to manually switch to the tmux session after loading it.
 
 ## TODO
 - [x] Fix bug where the program doesn't recognize already running tmux session.
-- [ ] Add the ability to delete saved sessions
+- [x] Add the ability to delete saved sessions
 - [ ] Add the ability to rename saved sessions
 - [ ] Create a small GUI for the program
 - [ ] Make panes remember their command history

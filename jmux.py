@@ -26,13 +26,20 @@ def main(action, sessions_dir):
             get_sessions(sessions_dir)
             session_name = input("\nEnter session name: ")
             manager.load_session(session_name)
+        case "delete":
+            print("Available sessions:")
+            get_sessions(sessions_dir)
+            session_name = input("\nEnter session name: ")
+            manager.delete_session_file(session_name)
         case _:
             raise ValueError(f"Invalid action: {action}")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("run", choices=("save", "load"), help="Action to perform")
+    parser.add_argument(
+        "run", choices=("save", "load", "delete"), help="Action to perform"
+    )
     parser.add_argument(
         "-d",
         "--sessions-dir",
