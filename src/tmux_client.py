@@ -168,15 +168,18 @@ class TmuxClient(Multiplexer):
         session_id, session_name = response.stdout.strip().split(":")
         return SessionLabel(session_id, session_name)
 
-    def kill_session(self, session_id: str) -> None:
+    def kill_session(self, session: JmuxSession) -> None:
         """
-        Kill the tmux session with the id `session_id`.
+        Kill the tmux session with the data in `session`.
         """
-        if not any(session.id == session_id for session in self.list_sessions()):
-            raise ValueError(f"Session with id {session_id} not found")
-        if session_id == self.get_current_session_id().id:
+        if not any(
+            existing_session.id == session.id
+            for existing_session in self.list_sessions()
+        ):
+            raise ValueError(f"Session with id {session.id} not found")
+        if session.id == self.get_current_session_id().id:
             raise ValueError("Cannot kill the current session")
-        command = [self._bin, "kill-session", "-t", session_id]
+        command = [self._bin, "kill-session", "-t", session.id]
         subprocess.run(command, check=True)
 
     def rename_session(self, session: JmuxSession, new_name: str) -> None:

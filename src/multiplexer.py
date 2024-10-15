@@ -46,9 +46,9 @@ class Multiplexer(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def kill_session(self, session_id: str) -> None:
+    def kill_session(self, session: JmuxSession) -> None:
         """
-        Kill the session with the id `session_id`.
+        Kill the session with the data in `session`.
         """
         raise NotImplementedError
 

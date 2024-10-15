@@ -341,14 +341,12 @@ class TestGetCurrentSessionId:
 
 class TestKillSession:
     @pytest.fixture(autouse=True)
-    def setup(self, tmux, mock_subprocess, mocker):
+    def setup(self, tmux, mock_subprocess, test_jmux_session, mocker):
         self.tmux = tmux
         self.mock_subprocess = mock_subprocess
-        mocker.patch.object(TmuxClient, "is_running", return_value=True)
+        self.session = test_jmux_session
         mocker.patch.object(
-            TmuxClient,
-            "list_sessions",
-            return_value=[SessionLabel("$1", "default"), SessionLabel("$2", "session")],
+            TmuxClient, "list_sessions", return_value=[SessionLabel("$1", "default")]
         )
         mocker.patch.object(
             TmuxClient,
@@ -361,10 +359,10 @@ class TestKillSession:
     ):
         mocker.patch.object(TmuxClient, "list_sessions", return_value=[])
         with pytest.raises(ValueError):
-            tmux.kill_session("$5")
+            tmux.kill_session(self.session)
 
     def test_kills_session(self, tmux, mock_subprocess, mocker):
-        tmux.kill_session("$1")
+        tmux.kill_session(self.session)
         command = ["/usr/bin/tmux", "kill-session", "-t", "$1"]
         expected_call = mocker.call(command, check=True)
         call_count = mock_subprocess.mock_calls.count(expected_call)
@@ -373,8 +371,13 @@ class TestKillSession:
     def test_raises_ValueError_if_session_is_currently_active(
         self, tmux, mock_subprocess, mocker
     ):
+        mocker.patch.object(
+            TmuxClient,
+            "get_current_session_id",
+            return_value=SessionLabel("$1", "default"),
+        )
         with pytest.raises(ValueError):
-            tmux.kill_session("$2")
+            tmux.kill_session(self.session)
 
 
 class TestRenameSession:
@@ -383,7 +386,6 @@ class TestRenameSession:
         self.tmux = tmux
         self.mock_subprocess = mock_subprocess
         self.session = test_jmux_session
-        mocker.patch.object(TmuxClient, "is_running", return_value=True)
         mocker.patch.object(
             TmuxClient, "list_sessions", return_value=[SessionLabel("$1", "default")]
         )
