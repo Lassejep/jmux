@@ -337,3 +337,41 @@ class TestGetCurrentSessionId:
         session = tmux.get_current_session_id()
         assert session.id == "$1"
         assert session.name == "default"
+
+
+class TestKillSession:
+    @pytest.fixture(autouse=True)
+    def setup(self, tmux, mock_subprocess, mocker):
+        self.tmux = tmux
+        self.mock_subprocess = mock_subprocess
+        mocker.patch.object(TmuxClient, "is_running", return_value=True)
+        mocker.patch.object(
+            TmuxClient,
+            "list_sessions",
+            return_value=[SessionLabel("$1", "default"), SessionLabel("$2", "session")],
+        )
+        mocker.patch.object(
+            TmuxClient,
+            "get_current_session_id",
+            return_value=SessionLabel("$2", "default"),
+        )
+
+    def test_raises_ValueError_if_session_id_does_not_exist(
+        self, tmux, mock_subprocess, mocker
+    ):
+        mocker.patch.object(TmuxClient, "list_sessions", return_value=[])
+        with pytest.raises(ValueError):
+            tmux.kill_session("$5")
+
+    def test_kills_session(self, tmux, mock_subprocess, mocker):
+        tmux.kill_session("$1")
+        command = ["/usr/bin/tmux", "kill-session", "-t", "$1"]
+        expected_call = mocker.call(command, check=True)
+        call_count = mock_subprocess.mock_calls.count(expected_call)
+        assert call_count == 1
+
+    def test_raises_ValueError_if_session_is_currently_active(
+        self, tmux, mock_subprocess, mocker
+    ):
+        with pytest.raises(ValueError):
+            tmux.kill_session("$2")

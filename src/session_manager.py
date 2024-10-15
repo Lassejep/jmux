@@ -71,3 +71,13 @@ class SessionManager:
         if not session_file.exists():
             raise FileNotFoundError(f"Session file {session_name} does not exist")
         session_file.unlink()
+        session = next(
+            (
+                session
+                for session in self.multiplexer.list_sessions()
+                if session.name == session_name
+            ),
+            None,
+        )
+        if session:
+            self.multiplexer.kill_session(session.id)

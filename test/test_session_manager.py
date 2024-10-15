@@ -145,3 +145,12 @@ class TestDeleteSessionFile:
     def test_deletes_session_file(self):
         self.manager.delete_session_file("test")
         self.session_file.unlink.assert_called_once()
+
+    def test_kills_session_if_session_exists(self, mocker, test_jmux_session):
+        mocker.patch.object(
+            self.manager.multiplexer, "list_sessions", return_value=[test_jmux_session]
+        )
+        self.manager.delete_session_file("test")
+        self.manager.multiplexer.kill_session.assert_called_once_with(
+            test_jmux_session.id
+        )

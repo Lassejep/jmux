@@ -44,3 +44,10 @@ class Multiplexer(abc.ABC):
         Create a new session with the data in `session`.
         """
         raise NotImplementedError
+
+    @abc.abstractmethod
+    def kill_session(self, session_id: str) -> None:
+        """
+        Kill the session with the id `session_id`.
+        """
+        raise NotImplementedError
