@@ -178,3 +178,17 @@ class TmuxClient(Multiplexer):
             raise ValueError("Cannot kill the current session")
         command = [self._bin, "kill-session", "-t", session_id]
         subprocess.run(command, check=True)
+
+    def rename_session(self, session: JmuxSession, new_name: str) -> None:
+        """
+        Updates the JmuxSession object with the new name,
+        then renames the tmux session to the new name if it exists.
+        """
+        session.name = new_name
+        if not any(
+            existing_session.id == session.id
+            for existing_session in self.list_sessions()
+        ):
+            raise ValueError(f"Session with id {session.id} not found")
+        command = [self._bin, "rename-session", "-t", session.id, session.name]
+        subprocess.run(command, check=True)

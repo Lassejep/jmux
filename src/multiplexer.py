@@ -51,3 +51,10 @@ class Multiplexer(abc.ABC):
         Kill the session with the id `session_id`.
         """
         raise NotImplementedError
+
+    @abc.abstractmethod
+    def rename_session(self, session: JmuxSession, new_name: str) -> None:
+        """
+        Rename the sessions name to `new_name` and update the session object.
+        """
+        raise NotImplementedError

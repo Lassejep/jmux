@@ -375,3 +375,37 @@ class TestKillSession:
     ):
         with pytest.raises(ValueError):
             tmux.kill_session("$2")
+
+
+class TestRenameSession:
+    @pytest.fixture(autouse=True)
+    def setup(self, tmux, mock_subprocess, test_jmux_session, mocker):
+        self.tmux = tmux
+        self.mock_subprocess = mock_subprocess
+        self.session = test_jmux_session
+        mocker.patch.object(TmuxClient, "is_running", return_value=True)
+        mocker.patch.object(
+            TmuxClient, "list_sessions", return_value=[SessionLabel("$1", "default")]
+        )
+
+    def test_raises_ValueError_if_session_id_does_not_exist(self, tmux, mocker):
+        mocker.patch.object(TmuxClient, "list_sessions", return_value=[])
+        with pytest.raises(ValueError):
+            tmux.rename_session(self.session, "new_name")
+
+    def test_renames_session(self, tmux, mock_subprocess, mocker):
+        tmux.rename_session(self.session, "new_name")
+        command = ["/usr/bin/tmux", "rename-session", "-t", "$1", "new_name"]
+        expected_call = mocker.call(command, check=True)
+        call_count = mock_subprocess.mock_calls.count(expected_call)
+        assert call_count == 1
+
+    def test_updates_session_name(self, tmux):
+        tmux.rename_session(self.session, "new_name")
+        assert self.session.name == "new_name"
+
+    def test_updates_session_name_even_if_session_doesnt_exist(self, tmux, mocker):
+        mocker.patch.object(TmuxClient, "list_sessions", return_value=[])
+        with pytest.raises(ValueError):
+            tmux.rename_session(self.session, "new_name")
+        assert self.session.name == "new_name"
