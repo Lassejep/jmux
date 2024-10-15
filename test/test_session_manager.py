@@ -155,3 +155,38 @@ class TestDeleteSession:
         )
         self.manager.delete_session("test")
         self.manager.multiplexer.kill_session.assert_called_once_with(test_jmux_session)
+
+
+class TestRenameSession:
+    @pytest.fixture(autouse=True)
+    def setup(self, mock_folder, session_manager, test_jmux_session, mocker):
+        self.folder = mock_folder
+        self.manager = session_manager
+        self.session_file = mock_folder / "test.json"
+        mocker.patch.object(
+            self.manager, "_get_session_by_name", return_value=test_jmux_session
+        )
+        self.folder.exists.side_effect = [True, False]
+        self.session_file.open().write.return_value = None
+        self.manager.multiplexer.rename_session.return_value = None
+
+    def test_throws_file_not_found_error_if_session_file_does_not_exist(self):
+        self.folder.exists.side_effect = [False, False]
+        with pytest.raises(FileNotFoundError):
+            self.manager.rename_session("test", "new_name")
+
+    def test_returns_none_given_valid_arguments(self, mocker):
+        assert self.manager.rename_session("test", "new_name") is None
+
+    def test_renames_session_file(self):
+        self.manager.rename_session("test", "new_name")
+        self.session_file.rename.assert_called_once_with(self.folder / "new_name.json")
+
+    def test_throws_value_error_if_new_session_file_already_exists(self):
+        self.folder.exists.side_effect = [True, True]
+        with pytest.raises(ValueError):
+            self.manager.rename_session("test", "new_name")
+
+    def test_renames_session_in_multiplexer(self, mocker, test_jmux_session):
+        self.manager.rename_session("test", "new_name")
+        self.manager.multiplexer.rename_session.assert_called_once()
