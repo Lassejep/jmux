@@ -1,192 +1,165 @@
-import json
-from dataclasses import asdict
-from pathlib import Path
-
 import pytest
 
-from src.models import JmuxSession
-from src.session_manager import SessionManager
+from src.models import SessionLabel
+from src.session_manager import FileHandler, SessionManager
 
 
 @pytest.fixture
-def mock_folder(mocker):
-    mock_path_instance = mocker.MagicMock(spec=Path)
-    mocker.patch.object(Path, "__new__", return_value=mock_path_instance)
-    mock_path_instance.__truediv__.return_value = Path("/tmp/jmux/test.json")
-    mock_path_instance.__str__.return_value = "/tmp/jmux/test.json"
-    m_open = mocker.mock_open()
-    mock_path_instance.open = m_open
-    yield mock_path_instance
-
-
-@pytest.fixture
-def session_manager(mock_folder, mock_multiplexer):
-    yield SessionManager(mock_folder, mock_multiplexer)
+def mock_file_handler(mocker):
+    mock_file_handler = mocker.MagicMock(spec=FileHandler)
+    yield mock_file_handler
 
 
 class TestConstructor:
     def test_given_valid_arguments_returns_instance_of_session_manager(
-        self, mock_folder, mock_multiplexer
+        self, mock_file_handler, mock_multiplexer
     ):
-        assert isinstance(SessionManager(mock_folder, mock_multiplexer), SessionManager)
+        assert isinstance(
+            SessionManager(mock_file_handler, mock_multiplexer), SessionManager
+        )
 
-    def test_with_invalid_save_folder_value_throws_value_error(self, mock_multiplexer):
+    def test_with_invalid_file_handler_value_throws_value_error(self, mock_multiplexer):
         with pytest.raises(ValueError):
             SessionManager("test", mock_multiplexer)
 
-    def test_given_save_folder_does_not_exist_throws_value_error(
-        self, mock_folder, mock_multiplexer
+    def test_given_invalid_multiplexer_value_throws_value_error(
+        self, mock_file_handler
     ):
-        mock_folder.exists.return_value = False
         with pytest.raises(ValueError):
-            SessionManager(mock_folder, mock_multiplexer)
-
-    def test_given_invalid_multiplexer_value_throws_value_error(self, mock_folder):
-        with pytest.raises(ValueError):
-            SessionManager(mock_folder, "test")
+            SessionManager(mock_file_handler, "test")
 
 
 class TestSaveCurrentSession:
     @pytest.fixture(autouse=True)
-    def setup(self, mock_folder, session_manager, test_jmux_session):
-        self.folder = mock_folder
-        self.file = mock_folder / "test.json"
-        self.manager = session_manager
+    def setup(self, mock_file_handler, mock_multiplexer, test_jmux_session):
+        self.file_handler = mock_file_handler
+        self.multiplexer = mock_multiplexer
         self.current_session = test_jmux_session
-        self.manager.multiplexer.get_session.return_value = self.current_session
+        self.manager = SessionManager(self.file_handler, self.multiplexer)
 
-    def test_given_valid_arguments_returns_none(self):
-        self.folder.exists.return_value = True
+    def test_returns_none_if_successful(self):
         assert self.manager.save_current_session() is None
 
-    def test_opens_save_file_in_write_mode(self):
-        self.manager.save_current_session()
-        self.file.open.assert_called_once_with("w")
-
-    def test_writes_to_save_file(self):
-        self.manager.save_current_session()
-        self.file.open().write.assert_called()
-
-    def test_writes_json_object_to_save_file(self):
-        self.manager.save_current_session()
-        written_data = "".join(
-            call[0][0] for call in self.file.open().write.call_args_list
+    def test_gets_current_session(self):
+        self.multiplexer.get_current_session_id.return_value = SessionLabel(
+            self.current_session.id, self.current_session.name
         )
-        try:
-            json.loads(written_data)
-            assert True
-        except json.JSONDecodeError:
-            assert False
-
-    def test_writes_correct_data_to_save_file(self):
         self.manager.save_current_session()
-        written_data = "".join(
-            call[0][0] for call in self.file.open().write.call_args_list
-        )
-        assert json.loads(written_data) == asdict(self.current_session)
+        self.multiplexer.get_session.assert_called_once_with(self.current_session.id)
+
+    def test_saves_current_session_to_file(self):
+        self.multiplexer.get_session.return_value = self.current_session
+        self.manager.save_current_session()
+        self.file_handler.save_session.assert_called_once_with(self.current_session)
 
 
 class TestLoadSession:
     @pytest.fixture(autouse=True)
-    def setup(self, mock_folder, session_manager, test_jmux_session, mocker):
-        self.folder = mock_folder
-        self.manager = session_manager
-        self.session_file = mock_folder / "test.json"
+    def setup(self, mock_file_handler, mock_multiplexer, test_jmux_session, mocker):
+        self.file_handler = mock_file_handler
+        self.multiplexer = mock_multiplexer
         self.jmux_session = test_jmux_session
-        mocker.patch("json.load", return_value=asdict(self.jmux_session))
-        mocker.patch.object(self.manager.multiplexer, "list_sessions", return_value=[])
-
-    def test_given_valid_arguments_returns_instance_of_JmuxSession(self):
-        assert isinstance(self.manager.load_session("test"), JmuxSession)
-
-    def test_throws_file_not_found_error_if_session_file_does_not_exist(self):
-        self.session_file.exists.return_value = False
-        with pytest.raises(FileNotFoundError):
-            self.manager.load_session("test")
-
-    def test_throws_value_error_if_session_already_exists(self, mocker):
+        self.manager = SessionManager(self.file_handler, self.multiplexer)
+        mocker.patch.object(self.multiplexer, "list_sessions", return_value=[])
         mocker.patch.object(
-            self.manager.multiplexer, "list_sessions", return_value=[self.jmux_session]
+            self.file_handler, "load_session", return_value=self.jmux_session
         )
+        mocker.patch.object(
+            self.multiplexer,
+            "create_session",
+            side_effect=lambda session: setattr(session, "id", "$2"),
+        )
+
+    def test_given_valid_arguments_returns_none(self):
+        assert self.manager.load_session("test") is None
+
+    def test_throws_value_error_if_session_already_exists(self):
+        self.multiplexer.list_sessions.return_value = [
+            SessionLabel(self.jmux_session.id, self.jmux_session.name)
+        ]
         with pytest.raises(ValueError):
             self.manager.load_session("test")
 
-    def test_opens_session_file_in_read_mode(self):
+    def test_loads_session_from_file(self):
         self.manager.load_session("test")
-        self.session_file.open.assert_called_once_with("r")
+        self.file_handler.load_session.assert_called_once_with("test")
 
-    def test_returns_JmuxSession_with_correct_data(self):
-        assert self.manager.load_session("test") == self.jmux_session
-
-    def test_given_valid_arguments_builds_session(self, mocker):
-        mocker.patch("json.load", return_value=asdict(self.jmux_session))
+    def test_builds_session_in_multiplexer(self):
         self.manager.load_session("test")
-        self.manager.multiplexer.create_session.assert_called_once_with(
-            self.jmux_session
-        )
+        self.multiplexer.create_session.assert_called_once_with(self.jmux_session)
+
+    def test_saves_session_to_file_with_new_session_ids(self):
+        assert self.jmux_session.id == "$1"
+        self.manager.load_session("test")
+        assert self.jmux_session.id == "$2"
+        self.file_handler.save_session.assert_called_once_with(self.jmux_session)
 
 
 class TestDeleteSession:
     @pytest.fixture(autouse=True)
-    def setup(self, mock_folder, session_manager, mocker):
-        self.folder = mock_folder
-        self.manager = session_manager
-        self.session_file = mock_folder / "test.json"
-        mocker.patch.object(self.manager.multiplexer, "list_sessions", return_value=[])
-
-    def test_throws_file_not_found_error_if_session_file_does_not_exist(self):
-        self.session_file.exists.return_value = False
-        with pytest.raises(FileNotFoundError):
-            self.manager.delete_session("test")
+    def setup(self, mock_file_handler, mock_multiplexer, test_jmux_session, mocker):
+        self.file_handler = mock_file_handler
+        self.multiplexer = mock_multiplexer
+        self.jmux_session = test_jmux_session
+        self.manager = SessionManager(self.file_handler, self.multiplexer)
+        mocker.patch.object(
+            self.manager, "_get_session_by_name", return_value=self.jmux_session
+        )
 
     def test_returns_none_given_valid_arguments(self):
         assert self.manager.delete_session("test") is None
 
     def test_deletes_session_file(self):
         self.manager.delete_session("test")
-        self.session_file.unlink.assert_called_once()
+        self.manager.file_handler.delete_session.assert_called_once_with("test")
 
-    def test_kills_session_if_session_exists(self, mocker, test_jmux_session):
-        mocker.patch.object(
-            self.manager.multiplexer, "list_sessions", return_value=[test_jmux_session]
-        )
-        mocker.patch.object(
-            self.manager.multiplexer, "get_session", return_value=test_jmux_session
-        )
+    def test_kills_session_if_session_exists(self):
         self.manager.delete_session("test")
-        self.manager.multiplexer.kill_session.assert_called_once_with(test_jmux_session)
+        self.manager.multiplexer.kill_session.assert_called_once_with(self.jmux_session)
 
 
 class TestRenameSession:
     @pytest.fixture(autouse=True)
-    def setup(self, mock_folder, session_manager, test_jmux_session, mocker):
-        self.folder = mock_folder
-        self.manager = session_manager
-        self.session_file = mock_folder / "test.json"
+    def setup(self, mock_file_handler, mock_multiplexer, test_jmux_session, mocker):
+        self.file_handler = mock_file_handler
+        self.multiplexer = mock_multiplexer
+        self.jmux_session = test_jmux_session
+        self.manager = SessionManager(self.file_handler, self.multiplexer)
         mocker.patch.object(
-            self.manager, "_get_session_by_name", return_value=test_jmux_session
+            self.manager, "_get_session_by_name", return_value=self.jmux_session
         )
-        self.folder.exists.side_effect = [True, False]
-        self.session_file.open().write.return_value = None
-        self.manager.multiplexer.rename_session.return_value = None
+        mocker.patch.object(
+            self.file_handler, "load_session", side_effect=FileNotFoundError
+        )
+        mocker.patch.object(
+            self.multiplexer,
+            "rename_session",
+            side_effect=lambda session, new_name: setattr(session, "name", new_name),
+        )
 
-    def test_throws_file_not_found_error_if_session_file_does_not_exist(self):
-        self.folder.exists.side_effect = [False, False]
-        with pytest.raises(FileNotFoundError):
-            self.manager.rename_session("test", "new_name")
-
-    def test_returns_none_given_valid_arguments(self, mocker):
+    def test_returns_none_given_valid_arguments(self):
         assert self.manager.rename_session("test", "new_name") is None
 
-    def test_renames_session_file(self):
+    def test_saves_file_with_new_name(self):
         self.manager.rename_session("test", "new_name")
-        self.session_file.rename.assert_called_once_with(self.folder / "new_name.json")
+        assert self.jmux_session.name == "new_name"
+        self.manager.file_handler.save_session.assert_called_once_with(
+            self.jmux_session
+        )
 
-    def test_throws_value_error_if_new_session_file_already_exists(self):
-        self.folder.exists.side_effect = [True, True]
+    def test_throws_value_error_if_file_with_new_name_exists(self, mocker):
+        mocker.patch.object(
+            self.file_handler, "load_session", return_value=self.jmux_session
+        )
         with pytest.raises(ValueError):
             self.manager.rename_session("test", "new_name")
 
-    def test_renames_session_in_multiplexer(self, mocker, test_jmux_session):
+    def test_deletes_file_with_old_name(self):
         self.manager.rename_session("test", "new_name")
-        self.manager.multiplexer.rename_session.assert_called_once()
+        self.manager.file_handler.delete_session.assert_called_once_with("test")
+
+    def test_renames_session_in_multiplexer(self):
+        self.manager.rename_session("test", "new_name")
+        self.manager.multiplexer.rename_session.assert_called_once_with(
+            self.jmux_session, "new_name"
+        )

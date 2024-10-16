@@ -1,11 +1,8 @@
-import json
-import pathlib
-from dataclasses import asdict
 from typing import Optional
 
+from src.file_handler import FileHandler
 from src.models import JmuxSession
 from src.multiplexer import Multiplexer
-from src.serialization import dict_to_JmuxSession
 
 
 class SessionManager:
@@ -13,12 +10,10 @@ class SessionManager:
     Manage terminal multiplexer sessions.
     """
 
-    def __init__(self, sessions_folder: pathlib.Path, multiplexer: Multiplexer) -> None:
-        if not sessions_folder or not isinstance(sessions_folder, pathlib.Path):
-            raise ValueError("Invalid sessions_folder value")
-        if not sessions_folder.exists():
-            raise ValueError("The specified folder does not exist")
-        self.sessions_folder = sessions_folder
+    def __init__(self, file_handler: FileHandler, multiplexer: Multiplexer) -> None:
+        if not file_handler or not isinstance(file_handler, FileHandler):
+            raise ValueError("Invalid file_handler value")
+        self.file_handler = file_handler
 
         if not multiplexer or not isinstance(multiplexer, Multiplexer):
             raise ValueError("Invalid multiplexer value")
@@ -32,46 +27,26 @@ class SessionManager:
         """
         current_session_label = self.multiplexer.get_current_session_id()
         session = self.multiplexer.get_session(current_session_label.id)
-        self.save_session(session)
+        self.file_handler.save_session(session)
 
-    def save_session(self, session: JmuxSession) -> None:
-        """
-        Save the session to a file with the name of the session in the sessions folder.
-        """
-        save_file = self.sessions_folder / f"{session.name}.json"
-        if not save_file.exists():
-            save_file.touch()
-        with save_file.open("w") as file:
-            json.dump(asdict(session), file, indent=4)
-
-    def load_session(self, session_name: str) -> JmuxSession:
+    def load_session(self, session_name: str) -> None:
         """
         Load the session with the name `session_name` from the sessions folder.
         """
-        session_file = self.sessions_folder / f"{session_name}.json"
-        if not session_file.exists():
-            raise FileNotFoundError(f"Session file {session_name} does not exist")
-        if not all(
-            [
-                session_name != session_label.name
-                for session_label in self.multiplexer.list_sessions()
-            ]
-        ):
-            raise ValueError(f"Session {session_name} already exists")
-        with session_file.open("r") as file:
-            session_data = json.load(file)
-        session = dict_to_JmuxSession(session_data)
+        session = self.file_handler.load_session(session_name)
+        current_sessions = self.multiplexer.list_sessions()
+        if session.name in [
+            session_label.name for session_label in current_sessions
+        ] and session.id in [session_label.id for session_label in current_sessions]:
+            raise ValueError("Session already exists")
         self.multiplexer.create_session(session)
-        return session
+        self.file_handler.save_session(session)
 
     def delete_session(self, session_name: str) -> None:
         """
-        Delete the session with the name `session_name`.
+        Delete the session with name `session_name`.
         """
-        session_file = self.sessions_folder / f"{session_name}.json"
-        if not session_file.exists():
-            raise FileNotFoundError(f"Session file {session_name} does not exist")
-        session_file.unlink()
+        self.file_handler.delete_session(session_name)
         session = self._get_session_by_name(session_name)
         if session:
             self.multiplexer.kill_session(session)
@@ -80,16 +55,19 @@ class SessionManager:
         """
         Rename the session with the name `session_name` to `new_name`.
         """
-        session_file = self.sessions_folder / f"{session_name}.json"
-        if not session_file.exists():
-            raise FileNotFoundError(f"Session file {session_name} does not exist")
-        new_session_file = self.sessions_folder / f"{new_name}.json"
-        if new_session_file.exists():
-            raise ValueError(f"Session {new_name} already exists")
-        session_file.rename(new_session_file)
+        try:
+            self.file_handler.load_session(new_name)
+            raise ValueError(f"Saved session with name {new_name} already exists")
+        except FileNotFoundError:
+            pass
         session = self._get_session_by_name(session_name)
         if session:
             self.multiplexer.rename_session(session, new_name)
+        else:
+            session = self.file_handler.load_session(session_name)
+            session.name = new_name
+        self.file_handler.save_session(session)
+        self.file_handler.delete_session(session_name)
 
     def _get_session_by_name(self, session_name: str) -> Optional[JmuxSession]:
         session = next(
