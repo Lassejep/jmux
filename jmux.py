@@ -2,12 +2,13 @@
 import argparse
 import pathlib
 
-from src import session_manager, tmux_client
+from src import file_handler, session_manager, tmux_client
 
 
 def create_manager(sessions_dir=None):
     client = tmux_client.TmuxClient()
-    return session_manager.SessionManager(sessions_dir, client)
+    file_manager = file_handler.FileHandler(sessions_dir)
+    return session_manager.SessionManager(file_manager, client)
 
 
 def get_sessions(sessions_dir):
@@ -31,6 +32,15 @@ def main(action, sessions_dir):
             get_sessions(sessions_dir)
             session_name = input("\nEnter session name: ")
             manager.delete_session_file(session_name)
+        case "rename":
+            print("Available sessions:")
+            get_sessions(sessions_dir)
+            session_name = input("\nEnter session name: ")
+            new_name = input("\nEnter new session name: ")
+            manager.rename_session(session_name, new_name)
+        case "ls":
+            print("Available sessions:")
+            get_sessions(sessions_dir)
         case _:
             raise ValueError(f"Invalid action: {action}")
 
@@ -38,7 +48,9 @@ def main(action, sessions_dir):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "run", choices=("save", "load", "delete"), help="Action to perform"
+        "run",
+        choices=("save", "load", "delete", "rename", "ls"),
+        help="Action to perform",
     )
     parser.add_argument(
         "-d",
