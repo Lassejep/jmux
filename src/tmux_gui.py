@@ -56,7 +56,7 @@ class TmuxPresenter(Presenter):
             case Key.LOWER_Q.value | Key.ESCAPE.value:
                 sys.exit(0)
             case Key.LOWER_K.value | Key.UP.value:
-                if self.position > 0:
+                if self.position > 1:
                     self.position -= 1
                     self.view.cursor_up()
             case Key.LOWER_J.value | Key.DOWN.value:
@@ -101,6 +101,7 @@ class TmuxView(View):
         self.screen.addstr(0, 0, "Select an action:")
         for session in self.presenter.format_sessions():
             self.screen.addstr(*session)
+        self.screen.move(1, 0)
         self.screen.refresh()
         while True:
             key = self.screen.getch()
