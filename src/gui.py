@@ -3,7 +3,7 @@ import abc
 
 class View(abc.ABC):
     """
-    Abstract base class for views.
+    Interface for views.
     """
 
     @abc.abstractmethod
@@ -40,6 +40,10 @@ class View(abc.ABC):
 
 
 class Presenter(abc.ABC):
+    """
+    Interface for presenters.
+    """
+
     @abc.abstractmethod
     def __init__(self, view: View):
         raise NotImplementedError
