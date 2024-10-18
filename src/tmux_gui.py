@@ -16,6 +16,7 @@ class InputKeys(Enum):
     LOWER_J = ord("j")
     LOWER_K = ord("k")
     LOWER_D = ord("d")
+    LOWER_A = ord("a")
     LOWER_R = ord("r")
     LOWER_Y = ord("y")
     LOWER_N = ord("n")
@@ -245,5 +246,5 @@ class CursesGUI(View):
             key = self.msgbox.getch()
             if key == InputKeys.LOWER_Y.value or key == InputKeys.UPPER_Y.value:
                 return True
-            elif key == InputKeys.LOWER_N.value or key == InputKeys.UPPER_N.value:
+            else:
                 return False
