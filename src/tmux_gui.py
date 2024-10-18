@@ -7,7 +7,7 @@ from src.gui import Presenter, View
 from src.session_manager import SessionManager
 
 
-class Key(Enum):
+class InputKeys(Enum):
     ESCAPE = 27
     ENTER = 10
     UP = curses.KEY_UP
@@ -58,13 +58,13 @@ class TmuxPresenter(Presenter):
         Handle user input.
         """
         match key:
-            case Key.LOWER_Q.value | Key.ESCAPE.value:
+            case InputKeys.LOWER_Q.value | InputKeys.ESCAPE.value:
                 self.exit_program()
-            case Key.LOWER_K.value | Key.UP.value:
+            case InputKeys.LOWER_K.value | InputKeys.UP.value:
                 self._move_cursor_up()
-            case Key.LOWER_J.value | Key.DOWN.value:
+            case InputKeys.LOWER_J.value | InputKeys.DOWN.value:
                 self._move_cursor_down()
-            case Key.ENTER.value:
+            case InputKeys.ENTER.value:
                 self.load_session()
             case _:
                 error_message = f"Invalid key code: {key}"
