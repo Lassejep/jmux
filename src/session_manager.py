@@ -6,11 +6,10 @@ from src.multiplexer import Multiplexer
 
 
 class SessionManager:
-    """
-    Manage terminal multiplexer sessions.
-    """
-
     def __init__(self, file_handler: FileHandler, multiplexer: Multiplexer) -> None:
+        """
+        Manage terminal multiplexer sessions.
+        """
         if not file_handler or not isinstance(file_handler, FileHandler):
             raise ValueError("Invalid file_handler value")
         self.file_handler = file_handler

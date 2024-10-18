@@ -26,11 +26,10 @@ class InputKeys(Enum):
 
 
 class JmuxPresenter(Presenter):
-    """
-    Presenter for the GUI.
-    """
-
     def __init__(self, view: View, session_manager: SessionManager):
+        """
+        Presenter for the GUI.
+        """
         self.view = view
         self.session_manager = session_manager
         self.position = 0

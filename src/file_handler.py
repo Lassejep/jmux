@@ -7,11 +7,10 @@ from src.serialization import dict_to_JmuxSession
 
 
 class FileHandler:
-    """
-    Handle file operations.
-    """
-
     def __init__(self, sessions_folder: pathlib.Path) -> None:
+        """
+        Handle file operations.
+        """
         if not sessions_folder or not isinstance(sessions_folder, pathlib.Path):
             raise ValueError("Invalid sessions_folder value")
         if not sessions_folder.exists():
