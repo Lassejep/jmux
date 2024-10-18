@@ -139,13 +139,13 @@ class CursesGUI(View):
         self.show_error("Exiting...")
 
     def _start_curses(self, stdscr) -> None:
-        self.screen: curses.window = stdscr
+        self.screen: curses.window = stdscr.subpad(0, 0)
         self._init_colors()
         curses.cbreak(True)
         curses.noecho()
         curses.curs_set(0)
         curses.set_escdelay(50)
-        stdscr.keypad(True)
+        self.screen.keypad(True)
         self.presenter.show_session_menu()
 
     def _init_colors(self) -> None:
