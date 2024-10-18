@@ -1,7 +1,7 @@
 import curses
 import sys
 from enum import Enum
-from typing import List, Tuple
+from typing import Callable, Concatenate, List, ParamSpec, Tuple, TypeVar
 
 from src.gui import Presenter, View
 from src.session_manager import SessionManager
@@ -9,7 +9,7 @@ from src.session_manager import SessionManager
 
 class Key(Enum):
     ESCAPE = 27
-    ENTER = curses.KEY_ENTER
+    ENTER = 10
     UP = curses.KEY_UP
     DOWN = curses.KEY_DOWN
     LOWER_Q = ord("q")
@@ -65,14 +65,23 @@ class TmuxPresenter(Presenter):
                     self.position += 1
                     self.view.cursor_down()
             case Key.ENTER.value:
-                session_name = self._get_sessions()[self.position - 1]
+                sessions = self._get_sessions()
+                if len(sessions) == 0:
+                    self.view.show_error("No sessions to load")
+                    return
+                session_name = sessions[self.position - 1]
                 try:
                     self.session_manager.load_session(session_name)
+                    sys.exit(0)
                 except ValueError as e:
                     self.view.show_error(str(e))
             case _:
                 error_message = f"Invalid key code: {key}"
                 self.view.show_error(error_message)
+
+
+Params = ParamSpec("Params")
+ReturnType = TypeVar("ReturnType")
 
 
 class TmuxView(View):
@@ -84,8 +93,12 @@ class TmuxView(View):
         self.presenter: Presenter = TmuxPresenter(self, session_manager)
 
     @staticmethod
-    def _static_cursor(func):
-        def inner(self, *args, **kwargs):
+    def _static_cursor(
+        func: Callable[Concatenate["TmuxView", Params], ReturnType]
+    ) -> Callable[Concatenate["TmuxView", Params], ReturnType]:
+        def inner(
+            self: "TmuxView", *args: Params.args, **kwargs: Params.kwargs
+        ) -> ReturnType:
             cursor_pos = self.screen.getyx()
             result = func(self, *args, **kwargs)
             self.screen.move(*cursor_pos)
