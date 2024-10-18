@@ -1,4 +1,7 @@
 import abc
+from typing import List
+
+from src.jmux_session import SessionLabel
 
 
 class Model(abc.ABC):
@@ -52,14 +55,20 @@ class Model(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def list_sessions(self) -> None:
+    def list_saved_sessions(self) -> List[SessionLabel]:
         """
-        List all the sessions.
+        List all saved sessions.
+        """
+        raise NotImplementedError
+
+    def list_running_sessions(self) -> List[SessionLabel]:
+        """
+        List all running sessions.
         """
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_active_session(self) -> None:
+    def get_active_session(self) -> SessionLabel:
         """
         Get the currently active session.
         """
