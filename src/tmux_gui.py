@@ -18,6 +18,7 @@ class InputKeys(Enum):
     LOWER_D = ord("d")
     LOWER_A = ord("a")
     LOWER_R = ord("r")
+    LOWER_S = ord("s")
     LOWER_Y = ord("y")
     LOWER_N = ord("n")
 
