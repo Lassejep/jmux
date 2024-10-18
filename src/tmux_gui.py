@@ -7,13 +7,13 @@ from src.gui import Presenter, View
 from src.session_manager import SessionManager
 
 
-class Keymap(Enum):
+class Key(Enum):
     ESCAPE = 27
-    KEY_UP = curses.KEY_UP
-    KEY_DOWN = curses.KEY_DOWN
-    KEY_Q = ord("q")
-    KEY_J = ord("j")
-    KEY_K = ord("k")
+    UP = curses.KEY_UP
+    DOWN = curses.KEY_DOWN
+    LOWER_Q = ord("q")
+    LOWER_J = ord("j")
+    LOWER_K = ord("k")
 
 
 class TmuxPresenter(Presenter):
@@ -37,11 +37,11 @@ class TmuxPresenter(Presenter):
 
     def handle_input(self, key: int) -> None:
         match key:
-            case Keymap.KEY_Q.value | Keymap.ESCAPE.value:
+            case Key.LOWER_Q.value | Key.ESCAPE.value:
                 sys.exit(0)
-            case Keymap.KEY_K.value | Keymap.KEY_UP.value:
+            case Key.LOWER_K.value | Key.UP.value:
                 self.view.cursor_up()
-            case Keymap.KEY_J.value | Keymap.KEY_DOWN.value:
+            case Key.LOWER_J.value | Key.DOWN.value:
                 self.view.cursor_down()
             case _:
                 pass

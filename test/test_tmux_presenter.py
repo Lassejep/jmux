@@ -56,3 +56,6 @@ class TestHandleInput:
     def test_calls_cursor_up_if_k_key_pressed(self):
         self.presenter.handle_input(ord("k"))
         self.presenter.view.cursor_up.assert_called_once()
+
+    def test_does_not_raise_error_if_invalid_key_pressed(self):
+        assert self.presenter.handle_input("ø") is None
