@@ -43,42 +43,58 @@ class TestHandleInput:
         self.presenter = TmuxPresenter(self.view, self.manager)
         self.presenter.position = 2
         self.presenter.saved_sessions = ["session1", "session2", "session3"]
-        self.sys_exit = mocker.patch("sys.exit")
-
-    def test_q_key_exits_program(self):
-        self.presenter.handle_input(ord("q"))
-        self.sys_exit.assert_called_once_with(0)
-
-    def test_escape_key_exits_program(self):
-        self.presenter.handle_input(27)
-        self.sys_exit.assert_called_once_with(0)
+        mocker.patch.object(self.presenter, "exit_program")
 
     def test_j_key_calls_cursor_down(self):
         self.presenter.handle_input(ord("j"))
-        self.presenter.view.cursor_down.assert_called_once()
+        self.view.cursor_down.assert_called_once()
 
-    def test_does_not_call_cursor_down_if_position_is_max(self):
+    def test_j_key_does_not_call_cursor_down_if_position_is_max(self):
         self.presenter.position = 3
         self.presenter.handle_input(ord("j"))
-        self.presenter.view.cursor_down.assert_not_called()
+        self.view.cursor_down.assert_not_called()
 
-    def test_calls_cursor_up_if_k_key_pressed(self):
+    def test_k_key_calls_cursor_up(self):
         self.presenter.handle_input(ord("k"))
-        self.presenter.view.cursor_up.assert_called_once()
+        self.view.cursor_up.assert_called_once()
 
-    def test_does_not_call_cursor_up_if_position_is_min(self):
+    def test_k_key_does_not_call_cursor_up_if_position_is_min(self):
         self.presenter.position = 1
         self.presenter.handle_input(ord("k"))
-        self.presenter.view.cursor_up.assert_not_called()
+        self.view.cursor_up.assert_not_called()
 
-    def test_does_not_raise_error_if_invalid_key_pressed(self):
+    def test_invalid_key_does_not_raise_exception(self):
         assert self.presenter.handle_input("ø") is None
 
-    def test_shows_error_message_if_invalid_key_pressed(self):
+    def test_invalid_key_shows_error_message(self):
         self.presenter.handle_input("ø")
         self.view.show_error.assert_called_once()
 
-    def test_loads_session_if_enter_key_pressed(self):
+    def test_q_key_exits_program(self):
+        self.presenter.handle_input(ord("q"))
+        self.presenter.exit_program.assert_called_once()
+
+    def test_escape_key_exits_program(self):
+        self.presenter.handle_input(27)
+        self.presenter.exit_program.assert_called_once()
+
+    def test_enter_key_loads_session(self, mocker):
+        mocker.patch.object(self.presenter, "load_session")
+        self.presenter.handle_input(10)
+        self.presenter.load_session.assert_called_once()
+
+
+class TestLoadSession:
+    @pytest.fixture(autouse=True)
+    def setup(self, mock_session_manager, mock_view, mocker):
+        self.manager = mock_session_manager
+        self.view = mock_view
+        self.presenter = TmuxPresenter(self.view, self.manager)
+        self.presenter.position = 2
+        self.presenter.saved_sessions = ["session1", "session2", "session3"]
+        mocker.patch.object(self.presenter, "exit_program")
+
+    def test_loads_session(self):
         self.presenter.handle_input(10)
         self.manager.load_session.assert_called_once_with("session2")
 
@@ -91,3 +107,25 @@ class TestHandleInput:
         self.presenter.saved_sessions = []
         self.presenter.handle_input(10)
         self.view.show_error.assert_called_once()
+
+    def test_exits_program_after_loading_session(self):
+        self.presenter.handle_input(10)
+        self.manager.load_session.assert_called_once()
+        self.presenter.exit_program.assert_called_once()
+
+
+class TestExitProgram:
+    @pytest.fixture(autouse=True)
+    def setup(self, mock_session_manager, mock_view, mocker):
+        self.manager = mock_session_manager
+        self.view = mock_view
+        self.presenter = TmuxPresenter(self.view, self.manager)
+        self.sys_exit = mocker.patch("sys.exit")
+
+    def test_stops_view(self):
+        self.presenter.exit_program()
+        self.view.stop.assert_called_once()
+
+    def test_exits_program(self):
+        self.presenter.exit_program()
+        self.sys_exit.assert_called_once_with(0)

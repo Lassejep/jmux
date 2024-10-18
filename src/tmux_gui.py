@@ -58,18 +58,19 @@ class TmuxPresenter(Presenter):
         """
         match key:
             case Key.LOWER_Q.value | Key.ESCAPE.value:
-                self._exit_program()
+                self.exit_program()
             case Key.LOWER_K.value | Key.UP.value:
                 self._move_cursor_up()
             case Key.LOWER_J.value | Key.DOWN.value:
                 self._move_cursor_down()
             case Key.ENTER.value:
-                self._load_session()
+                self.load_session()
             case _:
                 error_message = f"Invalid key code: {key}"
                 self.view.show_error(error_message)
 
-    def _exit_program(self) -> None:
+    def exit_program(self) -> None:
+        self.view.stop()
         sys.exit(0)
 
     def _move_cursor_up(self) -> None:
@@ -82,7 +83,7 @@ class TmuxPresenter(Presenter):
             self.position += 1
             self.view.cursor_down()
 
-    def _load_session(self) -> None:
+    def load_session(self) -> None:
         self.saved_sessions
         if len(self.saved_sessions) == 0:
             self.view.show_error("No sessions to load")
@@ -90,7 +91,7 @@ class TmuxPresenter(Presenter):
         session_name = self.saved_sessions[self.position - 1]
         try:
             self.session_manager.load_session(session_name)
-            sys.exit(0)
+            self.exit_program()
         except ValueError as e:
             self.view.show_error(str(e))
 
@@ -127,19 +128,26 @@ class TmuxView(View):
         """
         curses.wrapper(self._start_curses)
 
+    def stop(self) -> None:
+        """
+        Stop the view.
+        """
+        self.show_error("Exiting...")
+
     def _start_curses(self, stdscr) -> None:
         self.screen: curses.window = stdscr
         self._init_colors()
-        curses.use_default_colors()
         curses.cbreak(True)
         curses.noecho()
         curses.curs_set(0)
+        curses.set_escdelay(50)
         stdscr.keypad(True)
         self.show_menu()
 
     def _init_colors(self) -> None:
         curses.start_color()
-        curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLACK)
+        curses.use_default_colors()
+        curses.init_pair(1, curses.COLOR_RED, -1)
         self.error_color = curses.color_pair(1)
 
     def show_menu(self) -> None:
@@ -164,7 +172,7 @@ class TmuxView(View):
         Show an error message.
         """
         size = self.screen.getmaxyx()
-        self.screen.addstr(size[0] - 2, 0, message, self.error_color)
+        self.screen.addstr(size[0] - 1, 0, message, self.error_color)
         self.screen.refresh()
 
     def cursor_down(self) -> None:
