@@ -3,12 +3,11 @@ from typing import List, Tuple
 
 
 class View(abc.ABC):
-    """
-    Interface for views.
-    """
-
     @abc.abstractmethod
     def __init__(self):
+        """
+        Interface for views.
+        """
         raise NotImplementedError
 
     @abc.abstractmethod

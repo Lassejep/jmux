@@ -4,12 +4,11 @@ from src.view import View
 
 
 class Presenter(abc.ABC):
-    """
-    Interface for presenters.
-    """
-
     @abc.abstractmethod
     def __init__(self, view: View):
+        """
+        Interface for presenters.
+        """
         raise NotImplementedError
 
     @abc.abstractmethod

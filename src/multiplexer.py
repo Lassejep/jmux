@@ -5,10 +5,13 @@ from src.jmux_session import JmuxSession, SessionLabel
 
 
 class Multiplexer(abc.ABC):
-    """
-    Abstract class for a terminal multiplexer API.
-    Responsible for communicating with the terminal multiplexer.
-    """
+    @abc.abstractmethod
+    def __init__(self):
+        """
+        Abstract class for a terminal multiplexer API.
+        Responsible for communicating with the terminal multiplexer.
+        """
+        raise NotImplementedError
 
     @abc.abstractmethod
     def is_running(self) -> bool:

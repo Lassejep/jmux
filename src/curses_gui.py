@@ -11,11 +11,10 @@ ReturnType = TypeVar("ReturnType")
 
 
 class CursesGUI(View):
-    """
-    A Curses GUI that implements the View interface.
-    """
-
     def __init__(self, session_manager: SessionManager):
+        """
+        A Curses GUI that implements the View interface.
+        """
         self.presenter: Presenter = JmuxPresenter(self, session_manager)
 
     @staticmethod

@@ -7,12 +7,11 @@ from src.multiplexer import Multiplexer
 
 
 class TmuxClient(Multiplexer):
-    """
-    Implementation of the TerminalMultiplexerAPI
-    for the Tmux terminal multiplexer.
-    """
-
     def __init__(self) -> None:
+        """
+        Implementation of the TerminalMultiplexerAPI
+        for the Tmux terminal multiplexer.
+        """
         self._bin = self._get_binary()
         if not self._bin:
             raise FileNotFoundError("Tmux binary not found")
