@@ -15,6 +15,13 @@ class InputKeys(Enum):
     LOWER_Q = ord("q")
     LOWER_J = ord("j")
     LOWER_K = ord("k")
+    LOWER_D = ord("d")
+    LOWER_R = ord("r")
+    LOWER_Y = ord("y")
+    LOWER_N = ord("n")
+
+    UPPER_Y = ord("Y")
+    UPPER_N = ord("N")
 
 
 class TmuxPresenter(Presenter):
@@ -66,6 +73,8 @@ class TmuxPresenter(Presenter):
                 self._move_cursor_down()
             case InputKeys.ENTER.value:
                 self.load_session()
+            case InputKeys.LOWER_D.value:
+                self.delete_session()
             case _:
                 error_message = f"Invalid key code: {key}"
                 self.view.show_error(error_message)
@@ -98,6 +107,24 @@ class TmuxPresenter(Presenter):
             self.exit_program()
         except ValueError as e:
             self.view.show_error(str(e))
+
+    def delete_session(self) -> None:
+        """
+        Delete the selected session.
+        """
+        if len(self.saved_sessions) == 0:
+            self.view.show_error("No sessions to delete")
+            return
+        session_name = self.saved_sessions[self.position - 1]
+        if self.view.show_confirmation_message(f"Delete session {session_name}? (y/N)"):
+            try:
+                self.session_manager.delete_session(session_name)
+                self.show_session_menu()
+            except ValueError as e:
+                self.view.show_error(str(e))
+        else:
+            self.show_session_menu()
+            self.view.show_error("Session not deleted")
 
 
 Params = ParamSpec("Params")
@@ -139,13 +166,12 @@ class CursesGUI(View):
         self.show_error("Exiting...")
 
     def _start_curses(self, stdscr) -> None:
-        self.screen: curses.window = stdscr.subpad(0, 0)
-        self._init_colors()
         curses.cbreak(True)
         curses.noecho()
         curses.curs_set(0)
         curses.set_escdelay(50)
-        self.screen.keypad(True)
+        self._init_colors()
+        self._init_screen(stdscr)
         self.presenter.show_session_menu()
 
     def _init_colors(self) -> None:
@@ -153,6 +179,12 @@ class CursesGUI(View):
         curses.use_default_colors()
         curses.init_pair(1, curses.COLOR_RED, -1)
         self.error_color = curses.color_pair(1)
+
+    def _init_screen(self, stdscr) -> None:
+        size = stdscr.getmaxyx()
+        self.screen: curses.window = stdscr.subpad(0, 0)
+        self.screen.keypad(True)
+        self.msgbox = self.screen.subpad(1, size[1] - 1, size[0] - 1, 0)
 
     def show_menu(self, sessions: List[Tuple[int, int, str]]) -> None:
         """
@@ -175,9 +207,9 @@ class CursesGUI(View):
         """
         Show an error message.
         """
-        size = self.screen.getmaxyx()
-        self.screen.addstr(size[0] - 1, 0, message, self.error_color)
-        self.screen.refresh()
+        self.msgbox.clear()
+        self.msgbox.addstr(message, self.error_color)
+        self.msgbox.refresh()
 
     def cursor_down(self) -> None:
         """
@@ -201,3 +233,17 @@ class CursesGUI(View):
         cursor_y, cursor_x = curses.getsyx()
         self.screen.chgat(cursor_y, 0, -1, curses.A_NORMAL)
         self.screen.chgat(new_y, 0, -1, curses.A_REVERSE)
+
+    def show_confirmation_message(self, message: str) -> bool:
+        """
+        Show a confirmation message
+        """
+        self.msgbox.clear()
+        self.msgbox.addstr(message)
+        self.msgbox.refresh()
+        while True:
+            key = self.msgbox.getch()
+            if key == InputKeys.LOWER_Y.value or key == InputKeys.UPPER_Y.value:
+                return True
+            elif key == InputKeys.LOWER_N.value or key == InputKeys.UPPER_N.value:
+                return False
