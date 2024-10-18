@@ -41,21 +41,42 @@ class TestFormatSessions:
 
 class TestHandleInput:
     @pytest.fixture(autouse=True)
-    def setup(self, presenter):
+    def setup(self, presenter, mocker):
         self.presenter = presenter
+        self.presenter.position = 2
+        mocker.patch.object(
+            presenter,
+            "_get_sessions",
+            return_value=["session1", "session2", "session3"],
+        )
 
     def test_exits_program_if_q_key_pressed(self, mocker):
         sys_exit = mocker.patch("sys.exit")
         self.presenter.handle_input(ord("q"))
         sys_exit.assert_called_once_with(0)
 
+    def test_exits_program_if_escape_key_pressed(self, mocker):
+        sys_exit = mocker.patch("sys.exit")
+        self.presenter.handle_input(27)
+        sys_exit.assert_called_once_with(0)
+
     def test_calls_cursor_down_if_j_key_pressed(self):
         self.presenter.handle_input(ord("j"))
         self.presenter.view.cursor_down.assert_called_once()
 
+    def test_does_not_call_cursor_down_if_position_is_max(self):
+        self.presenter.position = 3
+        self.presenter.handle_input(ord("j"))
+        self.presenter.view.cursor_down.assert_not_called()
+
     def test_calls_cursor_up_if_k_key_pressed(self):
         self.presenter.handle_input(ord("k"))
         self.presenter.view.cursor_up.assert_called_once()
+
+    def test_does_not_call_cursor_up_if_position_is_min(self):
+        self.presenter.position = 1
+        self.presenter.handle_input(ord("k"))
+        self.presenter.view.cursor_up.assert_not_called()
 
     def test_does_not_raise_error_if_invalid_key_pressed(self):
         assert self.presenter.handle_input("ø") is None
