@@ -25,6 +25,13 @@ class View(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
+    def show_error(self, message: str):
+        """
+        Show an error message.
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def cursor_down(self):
         """
         Move the cursor down.
