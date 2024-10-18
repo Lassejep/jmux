@@ -9,6 +9,7 @@ from src.session_manager import SessionManager
 
 class Key(Enum):
     ESCAPE = 27
+    ENTER = curses.KEY_ENTER
     UP = curses.KEY_UP
     DOWN = curses.KEY_DOWN
     LOWER_Q = ord("q")
@@ -63,8 +64,15 @@ class TmuxPresenter(Presenter):
                 if self.position < len(self._get_sessions()):
                     self.position += 1
                     self.view.cursor_down()
+            case Key.ENTER.value:
+                session_name = self._get_sessions()[self.position - 1]
+                try:
+                    self.session_manager.load_session(session_name)
+                except ValueError as e:
+                    self.view.show_error(str(e))
             case _:
-                pass
+                error_message = f"Invalid key code: {key}"
+                self.view.show_error(error_message)
 
 
 class TmuxView(View):
@@ -75,24 +83,42 @@ class TmuxView(View):
     def __init__(self, session_manager: SessionManager):
         self.presenter: Presenter = TmuxPresenter(self, session_manager)
 
+    @staticmethod
+    def _static_cursor(func):
+        def inner(self, *args, **kwargs):
+            cursor_pos = self.screen.getyx()
+            result = func(self, *args, **kwargs)
+            self.screen.move(*cursor_pos)
+            return result
+
+        return inner
+
     def start(self) -> None:
         """
         Start the view.
         """
-        curses.wrapper(self.start_curses)
+        curses.wrapper(self._start_curses)
 
-    def start_curses(self, stdscr) -> None:
+    def _start_curses(self, stdscr) -> None:
         """
         Set starting values for the curses window.
         """
         self.screen: curses.window = stdscr
-        curses.start_color()
+        self._init_colors()
         curses.use_default_colors()
         curses.cbreak(True)
         curses.noecho()
         curses.curs_set(0)
         stdscr.keypad(True)
         self.show_menu()
+
+    def _init_colors(self) -> None:
+        """
+        Initialize the color pairs.
+        """
+        curses.start_color()
+        curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLACK)
+        self.error_color = curses.color_pair(1)
 
     def show_menu(self) -> None:
         """
@@ -109,6 +135,15 @@ class TmuxView(View):
             key = self.screen.getch()
             self.presenter.handle_input(key)
             self.screen.refresh()
+
+    @_static_cursor
+    def show_error(self, message: str) -> None:
+        """
+        Show an error message.
+        """
+        size = self.screen.getmaxyx()
+        self.screen.addstr(size[0] - 2, 0, message, self.error_color)
+        self.screen.refresh()
 
     def cursor_down(self) -> None:
         """
