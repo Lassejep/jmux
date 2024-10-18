@@ -18,6 +18,13 @@ class View(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
+    def stop(self):
+        """
+        Stop the view.
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def show_menu(self):
         """
         Show the menu.
@@ -63,6 +70,13 @@ class Presenter(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
+    def exit_program(self):
+        """
+        Exit the program.
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def show_session_menu(self):
         """
         Format the sessions for display.
@@ -73,5 +87,11 @@ class Presenter(abc.ABC):
     def handle_input(self, key: int):
         """
         Handle key input.
+        """
+        raise NotImplementedError
+
+    def load_session(self):
+        """
+        Load a session.
         """
         raise NotImplementedError
