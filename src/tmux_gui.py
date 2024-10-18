@@ -102,6 +102,7 @@ class TmuxView(View):
         for session in self.presenter.format_sessions():
             self.screen.addstr(*session)
         self.screen.move(1, 0)
+        self.screen.chgat(1, 0, -1, curses.A_REVERSE)
         self.screen.refresh()
         while True:
             key = self.screen.getch()
@@ -113,11 +114,20 @@ class TmuxView(View):
         Move the cursor down.
         """
         cursor_y, cursor_x = curses.getsyx()
-        self.screen.move(cursor_y + 1, cursor_x)
+        new_y = cursor_y + 1
+        self._highlight_selected(new_y)
+        self.screen.move(new_y, cursor_x)
 
     def cursor_up(self) -> None:
         """
         Move the cursor up.
         """
         cursor_y, cursor_x = curses.getsyx()
-        self.screen.move(cursor_y - 1, cursor_x)
+        new_y = cursor_y - 1
+        self._highlight_selected(new_y)
+        self.screen.move(new_y, cursor_x)
+
+    def _highlight_selected(self, new_y: int) -> None:
+        cursor_y, cursor_x = curses.getsyx()
+        self.screen.chgat(cursor_y, 0, -1, curses.A_NORMAL)
+        self.screen.chgat(new_y, 0, -1, curses.A_REVERSE)
