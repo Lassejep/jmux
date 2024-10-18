@@ -19,7 +19,7 @@ class Key(Enum):
 
 class TmuxPresenter(Presenter):
     """
-    Presenter for the TmuxView.
+    Presenter for the GUI.
     """
 
     def __init__(self, view: View, session_manager: SessionManager):
@@ -40,17 +40,18 @@ class TmuxPresenter(Presenter):
             session_file.stem for session_file in sessions_dir.iterdir()
         ]
 
-    def show_session_menu(self) -> List[Tuple[int, int, str]]:
+    def show_session_menu(self):
         """
         Format the sessions for display.
         """
         self._update_saved_sessions()
         if len(self.saved_sessions) > 0:
             self.position = 1
-        return [
+        sessions = [
             (index + 1, 0, f"{index + 1}. {session}")
             for index, session in enumerate(self.saved_sessions)
         ]
+        self.view.show_menu(sessions)
 
     def handle_input(self, key: int) -> None:
         """
@@ -84,6 +85,9 @@ class TmuxPresenter(Presenter):
             self.view.cursor_down()
 
     def load_session(self) -> None:
+        """
+        Load the selected session.
+        """
         self.saved_sessions
         if len(self.saved_sessions) == 0:
             self.view.show_error("No sessions to load")
@@ -100,9 +104,9 @@ Params = ParamSpec("Params")
 ReturnType = TypeVar("ReturnType")
 
 
-class TmuxView(View):
+class CursesGUI(View):
     """
-    View for the TmuxPresenter.
+    A Curses GUI that implements the View interface.
     """
 
     def __init__(self, session_manager: SessionManager):
@@ -110,10 +114,10 @@ class TmuxView(View):
 
     @staticmethod
     def _static_cursor(
-        func: Callable[Concatenate["TmuxView", Params], ReturnType]
-    ) -> Callable[Concatenate["TmuxView", Params], ReturnType]:
+        func: Callable[Concatenate["CursesGUI", Params], ReturnType]
+    ) -> Callable[Concatenate["CursesGUI", Params], ReturnType]:
         def inner(
-            self: "TmuxView", *args: Params.args, **kwargs: Params.kwargs
+            self: "CursesGUI", *args: Params.args, **kwargs: Params.kwargs
         ) -> ReturnType:
             cursor_pos = self.screen.getyx()
             result = func(self, *args, **kwargs)
@@ -142,7 +146,7 @@ class TmuxView(View):
         curses.curs_set(0)
         curses.set_escdelay(50)
         stdscr.keypad(True)
-        self.show_menu()
+        self.presenter.show_session_menu()
 
     def _init_colors(self) -> None:
         curses.start_color()
@@ -150,13 +154,13 @@ class TmuxView(View):
         curses.init_pair(1, curses.COLOR_RED, -1)
         self.error_color = curses.color_pair(1)
 
-    def show_menu(self) -> None:
+    def show_menu(self, sessions: List[Tuple[int, int, str]]) -> None:
         """
         Show the menu.
         """
         self.screen.clear()
         self.screen.addstr(0, 0, "Select an action:")
-        for session in self.presenter.show_session_menu():
+        for session in sessions:
             self.screen.addstr(*session)
         self.screen.move(1, 0)
         self.screen.chgat(1, 0, -1, curses.A_REVERSE)

@@ -1,4 +1,5 @@
 import abc
+from typing import List, Tuple
 
 
 class View(abc.ABC):
@@ -25,7 +26,7 @@ class View(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def show_menu(self):
+    def show_menu(self, sessions: List[Tuple[int, int, str]]):
         """
         Show the menu.
         """
