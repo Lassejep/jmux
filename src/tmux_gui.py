@@ -1,9 +1,19 @@
 import curses
 import sys
+from enum import Enum
 from typing import List, Tuple
 
 from src.gui import Presenter, View
 from src.session_manager import SessionManager
+
+
+class Keymap(Enum):
+    ESCAPE = 27
+    KEY_UP = curses.KEY_UP
+    KEY_DOWN = curses.KEY_DOWN
+    KEY_Q = ord("q")
+    KEY_J = ord("j")
+    KEY_K = ord("k")
 
 
 class TmuxPresenter(Presenter):
@@ -26,12 +36,15 @@ class TmuxPresenter(Presenter):
         ]
 
     def handle_input(self, key: int) -> None:
-        if key == ord("q"):
-            sys.exit(0)
-        elif key == ord("j"):
-            self.view.cursor_down()
-        elif key == ord("k"):
-            self.view.cursor_up()
+        match key:
+            case Keymap.KEY_Q.value | Keymap.ESCAPE.value:
+                sys.exit(0)
+            case Keymap.KEY_K.value | Keymap.KEY_UP.value:
+                self.view.cursor_up()
+            case Keymap.KEY_J.value | Keymap.KEY_DOWN.value:
+                self.view.cursor_down()
+            case _:
+                pass
 
 
 class TmuxView(View):
