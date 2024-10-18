@@ -1,8 +1,8 @@
 import sys
 from enum import Enum
 
+from src.model import Model
 from src.presenter import Presenter
-from src.session_manager import SessionManager
 from src.view import View
 
 
@@ -26,12 +26,12 @@ class InputKeys(Enum):
 
 
 class JmuxPresenter(Presenter):
-    def __init__(self, view: View, session_manager: SessionManager):
+    def __init__(self, view: View, model: Model):
         """
         Presenter for the GUI.
         """
         self.view = view
-        self.session_manager = session_manager
+        self.model = model
         self.position = 0
         self._update_saved_sessions()
 
