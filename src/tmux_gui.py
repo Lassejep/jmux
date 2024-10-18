@@ -17,11 +17,19 @@ class Key(Enum):
 
 
 class TmuxPresenter(Presenter):
+    """
+    Presenter for the TmuxView.
+    """
+
     def __init__(self, view: View, session_manager: SessionManager):
         self.view = view
         self.session_manager = session_manager
+        self.position = 0
 
     def run(self) -> None:
+        """
+        Start the presenter.
+        """
         self.view.start()
 
     def _get_sessions(self) -> List[str]:
@@ -29,33 +37,55 @@ class TmuxPresenter(Presenter):
         return [session_file.stem for session_file in sessions_dir.iterdir()]
 
     def format_sessions(self) -> List[Tuple[int, int, str]]:
+        """
+        Format the sessions for display.
+        """
         sessions = self._get_sessions()
+        if len(sessions) > 0:
+            self.position = 1
         return [
             (index + 1, 0, f"{index + 1}. {session}")
             for index, session in enumerate(sessions)
         ]
 
     def handle_input(self, key: int) -> None:
+        """
+        Handle user input.
+        """
         match key:
             case Key.LOWER_Q.value | Key.ESCAPE.value:
                 sys.exit(0)
             case Key.LOWER_K.value | Key.UP.value:
-                self.view.cursor_up()
+                if self.position > 0:
+                    self.position -= 1
+                    self.view.cursor_up()
             case Key.LOWER_J.value | Key.DOWN.value:
-                self.view.cursor_down()
+                if self.position < len(self._get_sessions()):
+                    self.position += 1
+                    self.view.cursor_down()
             case _:
                 pass
 
 
 class TmuxView(View):
+    """
+    View for the TmuxPresenter.
+    """
+
     def __init__(self, session_manager: SessionManager):
         self.presenter: Presenter = TmuxPresenter(self, session_manager)
 
     def start(self) -> None:
+        """
+        Start the view.
+        """
         curses.wrapper(self.start_curses)
 
     def start_curses(self, stdscr) -> None:
-        self.screen = stdscr
+        """
+        Set starting values for the curses window.
+        """
+        self.screen: curses.window = stdscr
         curses.start_color()
         curses.use_default_colors()
         curses.cbreak(True)
@@ -64,6 +94,9 @@ class TmuxView(View):
         self.show_menu()
 
     def show_menu(self) -> None:
+        """
+        Show the menu.
+        """
         self.screen.clear()
         self.screen.addstr(0, 0, "Select an action:")
         for session in self.presenter.format_sessions():
@@ -75,13 +108,15 @@ class TmuxView(View):
             self.screen.refresh()
 
     def cursor_down(self) -> None:
+        """
+        Move the cursor down.
+        """
         cursor_y, cursor_x = curses.getsyx()
-        if cursor_y == len(self.presenter.format_sessions()):
-            return
         self.screen.move(cursor_y + 1, cursor_x)
 
     def cursor_up(self) -> None:
+        """
+        Move the cursor up.
+        """
         cursor_y, cursor_x = curses.getsyx()
-        if cursor_y == 1:
-            return
         self.screen.move(cursor_y - 1, cursor_x)
