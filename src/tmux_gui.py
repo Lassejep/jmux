@@ -128,9 +128,6 @@ class TmuxView(View):
         curses.wrapper(self._start_curses)
 
     def _start_curses(self, stdscr) -> None:
-        """
-        Set starting values for the curses window.
-        """
         self.screen: curses.window = stdscr
         self._init_colors()
         curses.use_default_colors()
@@ -141,9 +138,6 @@ class TmuxView(View):
         self.show_menu()
 
     def _init_colors(self) -> None:
-        """
-        Initialize the color pairs.
-        """
         curses.start_color()
         curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLACK)
         self.error_color = curses.color_pair(1)
