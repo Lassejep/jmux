@@ -134,3 +134,34 @@ class TestExitProgram:
     def test_exits_program(self):
         self.presenter.exit_program()
         self.sys_exit.assert_called_once_with(0)
+
+
+class TestDeleteSession:
+    @pytest.fixture(autouse=True)
+    def setup(self, mock_session_manager, mock_view, mocker):
+        self.manager = mock_session_manager
+        self.view = mock_view
+        self.presenter = TmuxPresenter(self.view, self.manager)
+        self.presenter.position = 2
+        self.presenter.saved_sessions = ["session1", "session2", "session3"]
+        mocker.patch.object(self.presenter, "exit_program")
+
+    def test_deletes_session(self):
+        self.presenter.delete_session()
+        self.manager.delete_session.assert_called_once_with("session2")
+
+    def test_does_not_delete_session_if_no_sessions(self):
+        self.presenter.saved_sessions = []
+        self.presenter.delete_session()
+        self.manager.delete_session.assert_not_called()
+
+    def test_shows_error_message_if_no_sessions(self):
+        self.presenter.saved_sessions = []
+        self.presenter.delete_session()
+        self.view.show_error.assert_called_once()
+
+    def test_returns_to_menu_after_deleting_session(self, mocker):
+        mocker.patch.object(self.presenter, "show_session_menu")
+        self.presenter.delete_session()
+        self.manager.delete_session.assert_called_once()
+        self.presenter.show_session_menu.assert_called_once()

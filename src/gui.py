@@ -33,6 +33,13 @@ class View(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
+    def show_confirmation_message(self, message: str) -> bool:
+        """
+        Show a confirmation message
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def show_error(self, message: str):
         """
         Show an error message.
@@ -94,5 +101,11 @@ class Presenter(abc.ABC):
     def load_session(self):
         """
         Load a session.
+        """
+        raise NotImplementedError
+
+    def delete_session(self):
+        """
+        Delete a session.
         """
         raise NotImplementedError
