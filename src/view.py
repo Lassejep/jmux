@@ -33,9 +33,9 @@ class View(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def show_confirmation_message(self, message: str) -> bool:
+    def get_confirmation(self, message: str) -> int:
         """
-        Show a confirmation message
+        Show a confirmation `message` and return the user's key input as an int.
         """
         raise NotImplementedError
 
@@ -57,55 +57,5 @@ class View(abc.ABC):
     def cursor_up(self):
         """
         Move the cursor up.
-        """
-        raise NotImplementedError
-
-
-class Presenter(abc.ABC):
-    """
-    Interface for presenters.
-    """
-
-    @abc.abstractmethod
-    def __init__(self, view: View):
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def run(self):
-        """
-        Run the presenter.
-        """
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def exit_program(self):
-        """
-        Exit the program.
-        """
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def show_session_menu(self):
-        """
-        Format the sessions for display.
-        """
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def handle_input(self, key: int):
-        """
-        Handle key input.
-        """
-        raise NotImplementedError
-
-    def load_session(self):
-        """
-        Load a session.
-        """
-        raise NotImplementedError
-
-    def delete_session(self):
-        """
-        Delete a session.
         """
         raise NotImplementedError
