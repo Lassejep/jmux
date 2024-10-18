@@ -2,7 +2,7 @@ import json
 import pathlib
 from dataclasses import asdict
 
-from src.models import JmuxSession
+from src.jmux_session import JmuxSession
 from src.serialization import dict_to_JmuxSession
 
 

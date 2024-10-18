@@ -1,7 +1,7 @@
 from typing import Optional
 
 from src.file_handler import FileHandler
-from src.models import JmuxSession
+from src.jmux_session import JmuxSession
 from src.multiplexer import Multiplexer
 
 

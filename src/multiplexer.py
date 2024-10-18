@@ -1,7 +1,7 @@
 import abc
 from typing import List
 
-from src.models import JmuxSession, SessionLabel
+from src.jmux_session import JmuxSession, SessionLabel
 
 
 class Multiplexer(abc.ABC):
