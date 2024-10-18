@@ -23,16 +23,21 @@ class TestShowSessionMenu:
         self.presenter = TmuxPresenter(self.view, self.manager)
         mocker.patch.object(self.presenter, "_update_saved_sessions")
 
-    def test_returns_formatted_sessions(self):
+    def test_shows_menu(self):
         self.presenter.saved_sessions = ["session1", "session2"]
-        assert self.presenter.show_session_menu() == [
-            (1, 0, "1. session1"),
-            (2, 0, "2. session2"),
-        ]
+        self.presenter.show_session_menu()
+        self.view.show_menu.assert_called_once_with(
+            [(1, 0, "1. session1"), (2, 0, "2. session2")]
+        )
 
-    def test_returns_empty_list_if_no_sessions(self):
+    def test_updates_saved_sessions(self):
+        self.presenter.show_session_menu()
+        self.presenter._update_saved_sessions.assert_called_once()
+
+    def test_shows_menu_with_no_sessions(self):
         self.presenter.saved_sessions = []
-        assert self.presenter.show_session_menu() == []
+        self.presenter.show_session_menu()
+        self.view.show_menu.assert_called_once_with([])
 
 
 class TestHandleInput:

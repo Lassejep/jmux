@@ -13,7 +13,7 @@ def create_manager(sessions_dir=None):
 def main():
     sessions_dir = pathlib.Path.home() / ".jmux"
     manager = create_manager(sessions_dir)
-    view = tmux_gui.TmuxView(manager)
+    view = tmux_gui.CursesGUI(manager)
     view.presenter.run()
 
 
