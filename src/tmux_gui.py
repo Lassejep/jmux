@@ -26,6 +26,7 @@ class TmuxPresenter(Presenter):
         self.view = view
         self.session_manager = session_manager
         self.position = 0
+        self._update_saved_sessions()
 
     def run(self) -> None:
         """
@@ -33,20 +34,22 @@ class TmuxPresenter(Presenter):
         """
         self.view.start()
 
-    def _get_sessions(self) -> List[str]:
+    def _update_saved_sessions(self):
         sessions_dir = self.session_manager.file_handler.sessions_folder
-        return [session_file.stem for session_file in sessions_dir.iterdir()]
+        self.saved_sessions = [
+            session_file.stem for session_file in sessions_dir.iterdir()
+        ]
 
-    def format_sessions(self) -> List[Tuple[int, int, str]]:
+    def show_session_menu(self) -> List[Tuple[int, int, str]]:
         """
         Format the sessions for display.
         """
-        sessions = self._get_sessions()
-        if len(sessions) > 0:
+        self._update_saved_sessions()
+        if len(self.saved_sessions) > 0:
             self.position = 1
         return [
             (index + 1, 0, f"{index + 1}. {session}")
-            for index, session in enumerate(sessions)
+            for index, session in enumerate(self.saved_sessions)
         ]
 
     def handle_input(self, key: int) -> None:
@@ -55,29 +58,41 @@ class TmuxPresenter(Presenter):
         """
         match key:
             case Key.LOWER_Q.value | Key.ESCAPE.value:
-                sys.exit(0)
+                self._exit_program()
             case Key.LOWER_K.value | Key.UP.value:
-                if self.position > 1:
-                    self.position -= 1
-                    self.view.cursor_up()
+                self._move_cursor_up()
             case Key.LOWER_J.value | Key.DOWN.value:
-                if self.position < len(self._get_sessions()):
-                    self.position += 1
-                    self.view.cursor_down()
+                self._move_cursor_down()
             case Key.ENTER.value:
-                sessions = self._get_sessions()
-                if len(sessions) == 0:
-                    self.view.show_error("No sessions to load")
-                    return
-                session_name = sessions[self.position - 1]
-                try:
-                    self.session_manager.load_session(session_name)
-                    sys.exit(0)
-                except ValueError as e:
-                    self.view.show_error(str(e))
+                self._load_session()
             case _:
                 error_message = f"Invalid key code: {key}"
                 self.view.show_error(error_message)
+
+    def _exit_program(self) -> None:
+        sys.exit(0)
+
+    def _move_cursor_up(self) -> None:
+        if self.position > 1:
+            self.position -= 1
+            self.view.cursor_up()
+
+    def _move_cursor_down(self) -> None:
+        if self.position < len(self.saved_sessions):
+            self.position += 1
+            self.view.cursor_down()
+
+    def _load_session(self) -> None:
+        self.saved_sessions
+        if len(self.saved_sessions) == 0:
+            self.view.show_error("No sessions to load")
+            return
+        session_name = self.saved_sessions[self.position - 1]
+        try:
+            self.session_manager.load_session(session_name)
+            sys.exit(0)
+        except ValueError as e:
+            self.view.show_error(str(e))
 
 
 Params = ParamSpec("Params")
@@ -139,7 +154,7 @@ class TmuxView(View):
         """
         self.screen.clear()
         self.screen.addstr(0, 0, "Select an action:")
-        for session in self.presenter.format_sessions():
+        for session in self.presenter.show_session_menu():
             self.screen.addstr(*session)
         self.screen.move(1, 0)
         self.screen.chgat(1, 0, -1, curses.A_REVERSE)

@@ -63,7 +63,7 @@ class Presenter(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def format_sessions(self):
+    def show_session_menu(self):
         """
         Format the sessions for display.
         """
