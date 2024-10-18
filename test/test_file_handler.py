@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from src.models import JmuxSession
+from src.jmux_session import JmuxSession
 from src.session_manager import FileHandler
 
 

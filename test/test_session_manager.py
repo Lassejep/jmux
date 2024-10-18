@@ -1,6 +1,6 @@
 import pytest
 
-from src.models import SessionLabel
+from src.jmux_session import SessionLabel
 from src.session_manager import FileHandler, SessionManager
 
 

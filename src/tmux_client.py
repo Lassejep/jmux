@@ -2,7 +2,7 @@ import os
 import subprocess
 from typing import List
 
-from src.models import JmuxPane, JmuxSession, JmuxWindow, SessionLabel
+from src.jmux_session import JmuxPane, JmuxSession, JmuxWindow, SessionLabel
 from src.multiplexer import Multiplexer
 
 

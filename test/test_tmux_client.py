@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from src.models import JmuxPane, JmuxSession, JmuxWindow, SessionLabel
+from src.jmux_session import JmuxPane, JmuxSession, JmuxWindow, SessionLabel
 from src.tmux_client import TmuxClient
 
 

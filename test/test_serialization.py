@@ -1,6 +1,6 @@
 import pytest
 
-from src.models import JmuxPane, JmuxSession, JmuxWindow
+from src.jmux_session import JmuxPane, JmuxSession, JmuxWindow
 from src.serialization import (dict_to_JmuxPane, dict_to_JmuxSession,
                                dict_to_JmuxWindow)
 
