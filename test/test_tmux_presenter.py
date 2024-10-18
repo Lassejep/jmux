@@ -15,20 +15,17 @@ def mock_view(mocker):
     yield view
 
 
-@pytest.fixture
-def presenter(mock_view, mock_session_manager):
-    presenter = TmuxPresenter(mock_view, mock_session_manager)
-    yield presenter
-
-
 class TestFormatSessions:
     @pytest.fixture(autouse=True)
-    def setup(self, presenter):
-        self.presenter = presenter
+    def setup(self, mock_session_manager, mock_view):
+        self.manager = mock_session_manager
+        self.view = mock_view
+        self.presenter = TmuxPresenter(self.view, self.manager)
 
     def test_returns_formatted_sessions(self, mocker):
-        mock_get_sessions = mocker.patch.object(self.presenter, "_get_sessions")
-        mock_get_sessions.return_value = ["session1", "session2"]
+        mocker.patch.object(
+            self.presenter, "_get_sessions", return_value=["session1", "session2"]
+        )
         assert self.presenter.format_sessions() == [
             (1, 0, "1. session1"),
             (2, 0, "2. session2"),
@@ -41,26 +38,27 @@ class TestFormatSessions:
 
 class TestHandleInput:
     @pytest.fixture(autouse=True)
-    def setup(self, presenter, mocker):
-        self.presenter = presenter
+    def setup(self, mock_session_manager, mock_view, mocker):
+        self.manager = mock_session_manager
+        self.view = mock_view
+        self.presenter = TmuxPresenter(self.view, self.manager)
         self.presenter.position = 2
         mocker.patch.object(
-            presenter,
+            self.presenter,
             "_get_sessions",
             return_value=["session1", "session2", "session3"],
         )
+        self.sys_exit = mocker.patch("sys.exit")
 
-    def test_exits_program_if_q_key_pressed(self, mocker):
-        sys_exit = mocker.patch("sys.exit")
+    def test_q_key_exits_program(self):
         self.presenter.handle_input(ord("q"))
-        sys_exit.assert_called_once_with(0)
+        self.sys_exit.assert_called_once_with(0)
 
-    def test_exits_program_if_escape_key_pressed(self, mocker):
-        sys_exit = mocker.patch("sys.exit")
+    def test_escape_key_exits_program(self):
         self.presenter.handle_input(27)
-        sys_exit.assert_called_once_with(0)
+        self.sys_exit.assert_called_once_with(0)
 
-    def test_calls_cursor_down_if_j_key_pressed(self):
+    def test_j_key_calls_cursor_down(self):
         self.presenter.handle_input(ord("j"))
         self.presenter.view.cursor_down.assert_called_once()
 
@@ -80,3 +78,21 @@ class TestHandleInput:
 
     def test_does_not_raise_error_if_invalid_key_pressed(self):
         assert self.presenter.handle_input("ø") is None
+
+    def test_shows_error_message_if_invalid_key_pressed(self):
+        self.presenter.handle_input("ø")
+        self.view.show_error.assert_called_once()
+
+    def test_loads_session_if_enter_key_pressed(self):
+        self.presenter.handle_input(10)
+        self.manager.load_session.assert_called_once_with("session2")
+
+    def test_does_not_load_session_if_no_sessions(self, mocker):
+        mocker.patch.object(self.presenter, "_get_sessions", return_value=[])
+        self.presenter.handle_input(10)
+        self.manager.load_session.assert_not_called()
+
+    def test_shows_error_message_if_no_sessions(self, mocker):
+        mocker.patch.object(self.presenter, "_get_sessions", return_value=[])
+        self.presenter.handle_input(10)
+        self.view.show_error.assert_called_once()
