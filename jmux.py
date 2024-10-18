@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import pathlib
 
-from src import file_handler, session_manager, tmux_client, tmux_gui
+from src import curses_gui, file_handler, session_manager, tmux_client
 
 
 def create_manager(sessions_dir=None):
@@ -13,7 +13,7 @@ def create_manager(sessions_dir=None):
 def main():
     sessions_dir = pathlib.Path.home() / ".jmux"
     manager = create_manager(sessions_dir)
-    view = tmux_gui.CursesGUI(manager)
+    view = curses_gui.CursesGUI(manager)
     view.presenter.run()
 
 

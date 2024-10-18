@@ -1,7 +1,7 @@
 import pytest
 
-from src.gui import View
-from src.tmux_gui import TmuxPresenter
+from src.jmux_presenter import JmuxPresenter
+from src.view import View
 
 
 @pytest.fixture
@@ -20,7 +20,7 @@ class TestShowSessionMenu:
     def setup(self, mock_session_manager, mock_view, mocker):
         self.manager = mock_session_manager
         self.view = mock_view
-        self.presenter = TmuxPresenter(self.view, self.manager)
+        self.presenter = JmuxPresenter(self.view, self.manager)
         mocker.patch.object(self.presenter, "_update_saved_sessions")
 
     def test_shows_menu(self):
@@ -45,7 +45,7 @@ class TestHandleInput:
     def setup(self, mock_session_manager, mock_view, mocker):
         self.manager = mock_session_manager
         self.view = mock_view
-        self.presenter = TmuxPresenter(self.view, self.manager)
+        self.presenter = JmuxPresenter(self.view, self.manager)
         self.presenter.position = 2
         self.presenter.saved_sessions = ["session1", "session2", "session3"]
         mocker.patch.object(self.presenter, "exit_program")
@@ -94,7 +94,7 @@ class TestLoadSession:
     def setup(self, mock_session_manager, mock_view, mocker):
         self.manager = mock_session_manager
         self.view = mock_view
-        self.presenter = TmuxPresenter(self.view, self.manager)
+        self.presenter = JmuxPresenter(self.view, self.manager)
         self.presenter.position = 2
         self.presenter.saved_sessions = ["session1", "session2", "session3"]
         mocker.patch.object(self.presenter, "exit_program")
@@ -124,7 +124,7 @@ class TestExitProgram:
     def setup(self, mock_session_manager, mock_view, mocker):
         self.manager = mock_session_manager
         self.view = mock_view
-        self.presenter = TmuxPresenter(self.view, self.manager)
+        self.presenter = JmuxPresenter(self.view, self.manager)
         self.sys_exit = mocker.patch("sys.exit")
 
     def test_stops_view(self):
@@ -141,10 +141,11 @@ class TestDeleteSession:
     def setup(self, mock_session_manager, mock_view, mocker):
         self.manager = mock_session_manager
         self.view = mock_view
-        self.presenter = TmuxPresenter(self.view, self.manager)
+        self.presenter = JmuxPresenter(self.view, self.manager)
         self.presenter.position = 2
         self.presenter.saved_sessions = ["session1", "session2", "session3"]
         mocker.patch.object(self.presenter, "exit_program")
+        mocker.patch.object(self.view, "get_confirmation", return_value=ord("y"))
 
     def test_deletes_session(self):
         self.presenter.delete_session()
