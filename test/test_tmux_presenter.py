@@ -1,9 +1,8 @@
 import pytest
 
+from src.interfaces import Model, View
 from src.jmux_presenter import JmuxPresenter
 from src.jmux_session import SessionLabel
-from src.model import Model
-from src.view import View
 
 
 @pytest.fixture

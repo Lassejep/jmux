@@ -1,6 +1,6 @@
 import abc
 
-from src.view import View
+from src.interfaces.view import View
 
 
 class Presenter(abc.ABC):

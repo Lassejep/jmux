@@ -1,9 +1,8 @@
 from typing import List
 
 from src.file_handler import FileHandler
+from src.interfaces import Model, Multiplexer
 from src.jmux_session import SessionLabel
-from src.model import Model
-from src.multiplexer import Multiplexer
 
 
 class JmuxModel(Model):
