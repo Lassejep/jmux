@@ -1,32 +1,15 @@
 import pytest
 
-from src.interfaces import Model, View
-from src.models import SessionLabel
 from src.services import JmuxPresenter
-
-
-@pytest.fixture
-def mock_view(mocker):
-    yield mocker.MagicMock(spec=View)
-
-
-@pytest.fixture
-def mock_model(mocker):
-    yield mocker.MagicMock(spec=Model)
-
-
-@pytest.fixture
-def test_labels():
-    return [SessionLabel("$1", "session1"), SessionLabel("$2", "session2")]
 
 
 class TestRunningSessionsMenu:
     @pytest.fixture(autouse=True)
-    def setup(self, mocker, mock_view, mock_model, test_labels):
+    def setup(self, mocker, mock_view, mock_model, session_labels):
         self.model = mock_model
         self.view = mock_view
         self.presenter = JmuxPresenter(self.view, self.model)
-        self.labels = test_labels
+        self.labels = session_labels
 
     def test_updates_view_with_running_sessions(self):
         self.presenter.running_sessions_menu()
@@ -82,11 +65,11 @@ class TestRunningSessionsMenu:
 
 class TestSavedSessionsMenu:
     @pytest.fixture(autouse=True)
-    def setup(self, mocker, mock_view, mock_model, test_labels):
+    def setup(self, mocker, mock_view, mock_model, session_labels):
         self.model = mock_model
         self.view = mock_view
         self.presenter = JmuxPresenter(self.view, self.model)
-        self.labels = test_labels
+        self.labels = session_labels
 
     def test_updates_view_with_saved_sessions(self):
         self.presenter.saved_sessions_menu()
