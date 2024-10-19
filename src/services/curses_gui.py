@@ -1,28 +1,26 @@
 import curses
 from typing import Callable, Concatenate, List, ParamSpec, Tuple, TypeVar
 
-from src.interfaces import Presenter
-from src.interfaces.view import View
-from src.jmux_presenter import JmuxPresenter
-from src.session_manager import SessionManager
+from src.interfaces import Model, Presenter, View
+from src.services.jmux_presenter import JmuxPresenter
 
 Params = ParamSpec("Params")
 ReturnType = TypeVar("ReturnType")
 
 
-class CursesGUI(View):
-    def __init__(self, session_manager: SessionManager):
+class CursesGui(View):
+    def __init__(self, model: Model):
         """
         A Curses GUI that implements the View interface.
         """
-        self.presenter: Presenter = JmuxPresenter(self, session_manager)
+        self.presenter: Presenter = JmuxPresenter(self, model)
 
     @staticmethod
     def _static_cursor(
-        func: Callable[Concatenate["CursesGUI", Params], ReturnType]
-    ) -> Callable[Concatenate["CursesGUI", Params], ReturnType]:
+        func: Callable[Concatenate["CursesGui", Params], ReturnType]
+    ) -> Callable[Concatenate["CursesGui", Params], ReturnType]:
         def inner(
-            self: "CursesGUI", *args: Params.args, **kwargs: Params.kwargs
+            self: "CursesGui", *args: Params.args, **kwargs: Params.kwargs
         ) -> ReturnType:
             cursor_pos = self.screen.getyx()
             result = func(self, *args, **kwargs)
@@ -50,7 +48,7 @@ class CursesGUI(View):
         curses.set_escdelay(50)
         self._init_colors()
         self._init_screen(stdscr)
-        self.presenter.show_session_menu()
+        self.presenter.running_sessions_menu()
 
     def _init_colors(self) -> None:
         curses.start_color()

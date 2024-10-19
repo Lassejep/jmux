@@ -3,8 +3,8 @@ from dataclasses import asdict
 
 import pytest
 
-from src.file_handler import FileHandler
-from src.jmux_session import JmuxSession
+from src.models import JmuxSession
+from src.services import JsonHandler
 
 
 class TestConstructor:
@@ -14,19 +14,19 @@ class TestConstructor:
 
     def test_invalid_sessions_folder_value_throws_value_error(self):
         with pytest.raises(ValueError):
-            FileHandler("test")
+            JsonHandler("test")
 
     def test_given_sessions_folder_does_not_exist_throws_value_error(self):
         self.folder.exists.return_value = False
         with pytest.raises(ValueError):
-            FileHandler(self.folder)
+            JsonHandler(self.folder)
 
     def test_throws_value_error_if_sessions_folder_is_empty_string(self):
         with pytest.raises(ValueError):
-            FileHandler("")
+            JsonHandler("")
 
     def test_given_valid_arguments_returns_instance_of_file_handler(self):
-        assert isinstance(FileHandler(self.folder), FileHandler)
+        assert isinstance(JsonHandler(self.folder), JsonHandler)
 
 
 class TestSaveSession:
@@ -35,7 +35,7 @@ class TestSaveSession:
         self.folder = mock_folder
         self.file = mock_folder / "test.json"
         self.jmux_session = jmux_session
-        self.file_handler = FileHandler(self.folder)
+        self.file_handler = JsonHandler(self.folder)
 
     def test_given_valid_arguments_returns_none(self):
         self.folder.exists.return_value = True
@@ -74,7 +74,7 @@ class TestLoadSession:
         self.folder = mock_folder
         self.session_file = mock_folder / "test.json"
         self.jmux_session = jmux_session
-        self.file_handler = FileHandler(self.folder)
+        self.file_handler = JsonHandler(self.folder)
         mocker.patch("json.load", return_value=asdict(self.jmux_session))
 
     def test_given_valid_arguments_returns_instance_of_JmuxSession(self):
@@ -98,7 +98,7 @@ class TestDeleteSession:
     def setup(self, mock_folder):
         self.folder = mock_folder
         self.session_file = mock_folder / "test.json"
-        self.file_handler = FileHandler(self.folder)
+        self.file_handler = JsonHandler(self.folder)
 
     def test_throws_file_not_found_error_if_session_file_does_not_exist(self):
         self.session_file.exists.return_value = False

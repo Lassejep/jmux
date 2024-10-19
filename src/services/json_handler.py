@@ -1,11 +1,13 @@
 import json
 import pathlib
 from dataclasses import asdict
+from typing import List
 
-from src.jmux_session import JmuxPane, JmuxSession, JmuxWindow
+from src.interfaces import FileHandler
+from src.models import JmuxPane, JmuxSession, JmuxWindow, SessionLabel
 
 
-class FileHandler:
+class JsonHandler(FileHandler):
     def __init__(self, sessions_folder: pathlib.Path) -> None:
         """
         Handle file operations.
@@ -46,6 +48,21 @@ class FileHandler:
         if not session_file.exists():
             raise FileNotFoundError(f"Session file {session_name} does not exist")
         session_file.unlink()
+
+    def list_sessions(self) -> List[SessionLabel]:
+        """
+        Get a list of session labels of all the saved sessions.
+        """
+        session_files = self.sessions_folder.glob("*.json")
+        session_names = [session_file.stem for session_file in session_files]
+        labels = []
+        for session_name in session_names:
+            try:
+                session = self.load_session(session_name)
+                labels.append(SessionLabel(session.id, session.name))
+            except FileNotFoundError:
+                pass
+        return labels
 
     def _serialize_window(self, window: dict) -> JmuxWindow:
         window["panes"] = [JmuxPane(**pane_data) for pane_data in window["panes"]]

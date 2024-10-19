@@ -2,9 +2,8 @@ from pathlib import Path
 
 import pytest
 
-from src.file_handler import FileHandler
-from src.interfaces import Multiplexer
-from src.jmux_session import JmuxPane, JmuxSession, JmuxWindow
+from src.interfaces import FileHandler, Multiplexer
+from src.models import JmuxPane, JmuxSession, JmuxWindow
 
 
 @pytest.fixture
