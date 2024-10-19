@@ -1,5 +1,5 @@
 import abc
-from typing import List, Tuple
+from typing import List
 
 
 class View(abc.ABC):
@@ -25,9 +25,16 @@ class View(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def show_menu(self, sessions: List[Tuple[int, int, str]]):
+    def show_running_sessions(self, session_names: List[str]):
         """
-        Show the menu.
+        Show a list of running sessions.
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def show_saved_sessions(self, session_names: List[str]):
+        """
+        Show a list of saved sessions.
         """
         raise NotImplementedError
 
