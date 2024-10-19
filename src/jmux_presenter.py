@@ -1,6 +1,7 @@
 import sys
 from enum import Enum
 
+from src.jmux_session import SessionLabel
 from src.model import Model
 from src.presenter import Presenter
 from src.view import View
@@ -33,7 +34,7 @@ class JmuxPresenter(Presenter):
         self.view = view
         self.model = model
         self.position = 0
-        self._update_saved_sessions()
+        self._update_sessions()
 
     def run(self) -> None:
         """
@@ -41,24 +42,52 @@ class JmuxPresenter(Presenter):
         """
         self.view.start()
 
-    def _update_saved_sessions(self):
-        sessions_dir = self.session_manager.file_handler.sessions_folder
-        self.saved_sessions = [
-            session_file.stem for session_file in sessions_dir.iterdir()
-        ]
+    def stop(self) -> None:
+        self.view.stop()
+        sys.exit(0)
 
-    def show_session_menu(self):
+    def _update_sessions(self) -> None:
+        self.saved_sessions = self.model.list_saved_sessions()
+        self.running_sessions = self.model.list_running_sessions()
+        self.current_session = self.model.get_active_session()
+
+    def running_sessions_menu(self) -> None:
         """
-        Format the sessions for display.
+        get all running sessions from the model and show them in a view menu.
         """
-        self._update_saved_sessions()
-        if len(self.saved_sessions) > 0:
-            self.position = 1
-        sessions = [
-            (index + 1, 0, f"{index + 1}. {session}")
+        self._update_sessions()
+        session_names = [
+            self._annotate_running_session(index, session)
+            for index, session in enumerate(self.running_sessions)
+        ]
+        self.view.show_running_sessions(session_names)
+
+    def _annotate_running_session(self, index: int, session: SessionLabel) -> str:
+        name = f"{index + 1}. {session.name}"
+        if session == self.current_session:
+            name += "*"
+        if session in self.saved_sessions:
+            name += " (saved)"
+        return name
+
+    def saved_sessions_menu(self) -> None:
+        """
+        Get all saved sessions from the model and show them in a view menu.
+        """
+        self._update_sessions()
+        session_names = [
+            self._annotate_saved_session(index, session)
             for index, session in enumerate(self.saved_sessions)
         ]
-        self.view.show_menu(sessions)
+        self.view.show_saved_sessions(session_names)
+
+    def _annotate_saved_session(self, index: int, session: SessionLabel) -> str:
+        name = f"{index + 1}. {session.name}"
+        if session == self.current_session:
+            name += "*"
+        if session in self.running_sessions:
+            name += " (running)"
+        return name
 
     def handle_input(self, key: int) -> None:
         """
@@ -66,7 +95,7 @@ class JmuxPresenter(Presenter):
         """
         match key:
             case InputKeys.LOWER_Q.value | InputKeys.ESCAPE.value:
-                self.exit_program()
+                self.stop()
             case InputKeys.LOWER_K.value | InputKeys.UP.value:
                 self._move_cursor_up()
             case InputKeys.LOWER_J.value | InputKeys.DOWN.value:
@@ -79,10 +108,6 @@ class JmuxPresenter(Presenter):
                 error_message = f"Invalid key code: {key}"
                 self.view.show_error(error_message)
 
-    def exit_program(self) -> None:
-        self.view.stop()
-        sys.exit(0)
-
     def _move_cursor_up(self) -> None:
         if self.position > 1:
             self.position -= 1
@@ -93,38 +118,38 @@ class JmuxPresenter(Presenter):
             self.position += 1
             self.view.cursor_down()
 
+    def create_session(self) -> None:
+        """
+        Create a new session.
+        """
+        pass
+
+    def save_session(self) -> None:
+        """
+        Save the selected session.
+        """
+        pass
+
     def load_session(self) -> None:
         """
         Load the selected session.
         """
-        self.saved_sessions
-        if len(self.saved_sessions) == 0:
-            self.view.show_error("No sessions to load")
-            return
-        session_name = self.saved_sessions[self.position - 1]
-        try:
-            self.session_manager.load_session(session_name)
-            self.exit_program()
-        except ValueError as e:
-            self.view.show_error(str(e))
+        pass
+
+    def kill_session(self) -> None:
+        """
+        Kill the selected session.
+        """
+        pass
 
     def delete_session(self) -> None:
         """
         Delete the selected session.
         """
-        if len(self.saved_sessions) == 0:
-            self.view.show_error("No sessions to delete")
-            return
-        session_name = self.saved_sessions[self.position - 1]
-        confirmation_response = self.view.get_confirmation(
-            f"Delete session {session_name}? (y/N)"
-        )
-        if confirmation_response in (InputKeys.LOWER_Y.value, InputKeys.UPPER_Y.value):
-            try:
-                self.session_manager.delete_session(session_name)
-                self.show_session_menu()
-            except ValueError as e:
-                self.view.show_error(str(e))
-        else:
-            self.show_session_menu()
-            self.view.show_error("Session not deleted")
+        pass
+
+    def rename_session(self) -> None:
+        """
+        Rename the selected session.
+        """
+        pass
