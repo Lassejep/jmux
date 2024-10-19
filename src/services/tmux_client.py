@@ -194,3 +194,12 @@ class TmuxClient(Multiplexer):
             raise ValueError(f"Session with id {session.id} not found")
         command = [self._bin, "rename-session", "-t", session.id, session.name]
         subprocess.run(command, check=True)
+
+    def create_new_session(self, session_name: str) -> None:
+        """
+        Create a new tmux session with the name `session_name`.
+        """
+        command = [self._bin, "new-session", "-ds", session_name]
+        subprocess.run(command, check=True)
+        command = [self._bin, "switch-client", "-t", session_name]
+        subprocess.run(command, check=True)

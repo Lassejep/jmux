@@ -22,8 +22,7 @@ class JmuxModel(Model):
         """
         Create a new session in the terminal multiplexer with the name `session_name`.
         """
-        raise NotImplementedError
-        pass
+        self.multiplexer.create_new_session(session_name)
 
     def save_session(self, label: SessionLabel) -> None:
         """
