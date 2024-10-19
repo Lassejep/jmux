@@ -1,8 +1,7 @@
 from typing import List
 
-from src.file_handler import FileHandler
-from src.interfaces import Model, Multiplexer
-from src.jmux_session import SessionLabel
+from src.interfaces import FileHandler, Model, Multiplexer
+from src.models import SessionLabel
 
 
 class JmuxModel(Model):
@@ -12,7 +11,11 @@ class JmuxModel(Model):
         Responsible for communicating with the presenter.
         Implements the Model interface.
         """
+        if not multiplexer or not isinstance(multiplexer, Multiplexer):
+            raise ValueError("Invalid multiplexer value")
         self.multiplexer = multiplexer
+        if not file_handler or not isinstance(file_handler, FileHandler):
+            raise ValueError("Invalid file_handler value")
         self.file_handler = file_handler
 
     def create_session(self, session_name: str) -> None:
@@ -33,6 +36,8 @@ class JmuxModel(Model):
         """
         Load the session with `label` from a file.
         """
+        if label == self.multiplexer.get_current_session_label():
+            raise ValueError("Session already exists")
         session = self.file_handler.load_session(label.name)
         self.multiplexer.create_session(session)
         self.file_handler.save_session(session)
@@ -41,6 +46,8 @@ class JmuxModel(Model):
         """
         Kills the session with `label` in the terminal multiplexer.
         """
+        if label not in self.multiplexer.list_sessions():
+            raise ValueError("Session does not exist")
         session = self.multiplexer.get_session(label.id)
         self.multiplexer.kill_session(session)
 
@@ -48,6 +55,8 @@ class JmuxModel(Model):
         """
         Delete the session with `label` from the file system.
         """
+        if label not in self.file_handler.list_sessions():
+            raise ValueError("Session does not exist")
         self.file_handler.delete_session(label.name)
 
     def rename_session(self, label: SessionLabel, new_name: str) -> None:
@@ -55,17 +64,21 @@ class JmuxModel(Model):
         Rename the session with `label` to `new_name` in the multiplexer
         and in the file system.
         """
-        session = self.multiplexer.get_session(label.id)
-        self.multiplexer.rename_session(session, new_name)
-        self.file_handler.save_session(session)
-        self.file_handler.delete_session(label.name)
+        if label in self.multiplexer.list_sessions():
+            session = self.multiplexer.get_session(label.id)
+            self.multiplexer.rename_session(session, new_name)
+        if label in self.file_handler.list_sessions():
+            if not session:
+                session = self.file_handler.load_session(label.name)
+                session.name = new_name
+            self.file_handler.save_session(session)
+            self.file_handler.delete_session(label.name)
 
     def list_saved_sessions(self) -> List[SessionLabel]:
         """
         List all sessions saved in the file system.
         """
-        raise NotImplementedError
-        return []
+        return self.file_handler.list_sessions()
 
     def list_running_sessions(self) -> List[SessionLabel]:
         """
@@ -77,4 +90,4 @@ class JmuxModel(Model):
         """
         Get the active/focused session in the terminal multiplexer.
         """
-        return self.multiplexer.get_current_session_id()
+        return self.multiplexer.get_current_session_label()

@@ -1,9 +1,9 @@
 import abc
 from typing import List
 
-from src.file_handler import FileHandler
+from src.interfaces.file_handler import FileHandler
 from src.interfaces.multiplexer import Multiplexer
-from src.jmux_session import SessionLabel
+from src.models import SessionLabel
 
 
 class Model(abc.ABC):

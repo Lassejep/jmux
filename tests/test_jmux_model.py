@@ -1,6 +1,6 @@
 import pytest
 
-from src.jmux_model import JmuxModel
+from src.services import JmuxModel
 
 
 class TestConstructor:

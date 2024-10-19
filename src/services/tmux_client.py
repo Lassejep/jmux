@@ -3,7 +3,7 @@ import subprocess
 from typing import List
 
 from src.interfaces import Multiplexer
-from src.jmux_session import JmuxPane, JmuxSession, JmuxWindow, SessionLabel
+from src.models import JmuxPane, JmuxSession, JmuxWindow, SessionLabel
 
 
 class TmuxClient(Multiplexer):
@@ -156,7 +156,7 @@ class TmuxClient(Multiplexer):
         response = subprocess.run(command, capture_output=True, text=True, check=True)
         pane.id = response.stdout.strip()
 
-    def get_current_session_id(self) -> SessionLabel:
+    def get_current_session_label(self) -> SessionLabel:
         """
         Get the data of the currently running tmux session.
         """
@@ -176,7 +176,7 @@ class TmuxClient(Multiplexer):
             for existing_session in self.list_sessions()
         ):
             raise ValueError(f"Session with id {session.id} not found")
-        if session.id == self.get_current_session_id().id:
+        if session.id == self.get_current_session_label().id:
             raise ValueError("Cannot kill the current session")
         command = [self._bin, "kill-session", "-t", session.id]
         subprocess.run(command, check=True)

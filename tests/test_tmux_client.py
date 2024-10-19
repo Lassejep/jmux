@@ -2,8 +2,8 @@ import os
 
 import pytest
 
-from src.jmux_session import JmuxPane, JmuxSession, JmuxWindow, SessionLabel
-from src.tmux_client import TmuxClient
+from src.models import JmuxPane, JmuxSession, JmuxWindow, SessionLabel
+from src.services import TmuxClient
 
 
 def list_sessions_out(number_of_sessions):
@@ -316,15 +316,15 @@ class TestGetCurrentSessionId:
     def test_raises_ValueError_if_no_session_is_running(self):
         self.mocker.patch.object(TmuxClient, "is_running", return_value=False)
         with pytest.raises(ValueError):
-            self.multiplexer.get_current_session_id()
+            self.multiplexer.get_current_session_label()
 
     def test_returns_SessionLabel(self):
         self.subprocess.return_value.stdout = "$1:default"
-        assert isinstance(self.multiplexer.get_current_session_id(), SessionLabel)
+        assert isinstance(self.multiplexer.get_current_session_label(), SessionLabel)
 
     def test_returns_SessionLabel_with_correct_id_and_name(self):
         self.subprocess.return_value.stdout = "$1:default"
-        session = self.multiplexer.get_current_session_id()
+        session = self.multiplexer.get_current_session_label()
         assert session.id == "$1"
         assert session.name == "default"
 
@@ -342,7 +342,7 @@ class TestKillSession:
         )
         self.mocker.patch.object(
             TmuxClient,
-            "get_current_session_id",
+            "get_current_session_label",
             return_value=SessionLabel("$2", "default"),
         )
 
@@ -361,7 +361,7 @@ class TestKillSession:
     def test_raises_ValueError_if_session_is_currently_active(self):
         self.mocker.patch.object(
             TmuxClient,
-            "get_current_session_id",
+            "get_current_session_label",
             return_value=SessionLabel("$1", "default"),
         )
         with pytest.raises(ValueError):

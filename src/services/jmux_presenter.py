@@ -2,7 +2,7 @@ import sys
 from enum import Enum
 
 from src.interfaces import Model, Presenter, View
-from src.jmux_session import SessionLabel
+from src.models import SessionLabel
 
 
 class InputKeys(Enum):
