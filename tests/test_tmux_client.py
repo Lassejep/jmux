@@ -331,19 +331,20 @@ class TestGetCurrentSessionId:
 
 class TestKillSession:
     @pytest.fixture(autouse=True)
-    def setup(self, mock_subprocess, jmux_session, mocker):
+    def setup(self, mock_subprocess, jmux_session, session_labels, mocker):
         self.subprocess = mock_subprocess
         self.session = jmux_session
         self.mocker = mocker
+        self.labels = session_labels
         self.multiplexer = TmuxClient()
         self.multiplexer._bin = "/usr/bin/tmux"
         self.mocker.patch.object(
-            TmuxClient, "list_sessions", return_value=[SessionLabel("$1", "default")]
+            TmuxClient, "list_sessions", return_value=[self.labels[0]]
         )
         self.mocker.patch.object(
             TmuxClient,
             "get_current_session_label",
-            return_value=SessionLabel("$2", "default"),
+            return_value=self.labels[1],
         )
 
     def test_raises_ValueError_if_session_id_does_not_exist(self):
@@ -362,7 +363,7 @@ class TestKillSession:
         self.mocker.patch.object(
             TmuxClient,
             "get_current_session_label",
-            return_value=SessionLabel("$1", "default"),
+            return_value=self.labels[0],
         )
         with pytest.raises(ValueError):
             self.multiplexer.kill_session(self.session)
@@ -370,14 +371,15 @@ class TestKillSession:
 
 class TestRenameSession:
     @pytest.fixture(autouse=True)
-    def setup(self, mock_subprocess, jmux_session, mocker):
+    def setup(self, mock_subprocess, jmux_session, session_labels, mocker):
         self.subprocess = mock_subprocess
         self.session = jmux_session
         self.mocker = mocker
+        self.labels = session_labels
         self.multiplexer = TmuxClient()
         self.multiplexer._bin = "/usr/bin/tmux"
         self.mocker.patch.object(
-            TmuxClient, "list_sessions", return_value=[SessionLabel("$1", "default")]
+            TmuxClient, "list_sessions", return_value=[self.labels[0]]
         )
 
     def test_raises_ValueError_if_session_id_does_not_exist(self):

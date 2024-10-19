@@ -2,8 +2,8 @@ from pathlib import Path
 
 import pytest
 
-from src.interfaces import FileHandler, Multiplexer
-from src.models import JmuxPane, JmuxSession, JmuxWindow
+from src.interfaces import FileHandler, Model, Multiplexer, View
+from src.models import JmuxPane, JmuxSession, JmuxWindow, SessionLabel
 
 
 @pytest.fixture
@@ -36,6 +36,21 @@ def mock_subprocess(mocker):
 
     subprocess_run.set_side_effects = set_side_effects
     return subprocess_run
+
+
+@pytest.fixture
+def mock_view(mocker):
+    yield mocker.MagicMock(spec=View)
+
+
+@pytest.fixture
+def mock_model(mocker):
+    yield mocker.MagicMock(spec=Model)
+
+
+@pytest.fixture
+def session_labels():
+    return [SessionLabel("$1", "session1"), SessionLabel("$2", "session2")]
 
 
 @pytest.fixture
