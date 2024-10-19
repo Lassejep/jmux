@@ -44,7 +44,7 @@ class Multiplexer(abc.ABC):
     @abc.abstractmethod
     def create_session(self, session: JmuxSession) -> None:
         """
-        Create a new session with the data in `session`.
+        Create a session with the data in `session`.
         """
         raise NotImplementedError
 
@@ -59,5 +59,12 @@ class Multiplexer(abc.ABC):
     def rename_session(self, session: JmuxSession, new_name: str) -> None:
         """
         Rename the sessions name to `new_name` and update the session object.
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def create_new_session(self, session_name: str) -> None:
+        """
+        Create a new session with the name `session_name`.
         """
         raise NotImplementedError
