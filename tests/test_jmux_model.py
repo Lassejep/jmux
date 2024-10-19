@@ -4,19 +4,19 @@ from src.services import JmuxModel
 
 
 class TestConstructor:
-    @pytest.fixture
+    @pytest.fixture(autouse=True)
     def setup(self, mock_multiplexer, mock_file_handler):
         self.multiplexer = mock_multiplexer
         self.file_handler = mock_file_handler
 
-    def test_throws_exception_when_multiplexer_is_invalid(self):
-        with pytest.raises(Exception):
+    def test_invalid_multiplexer_argument_raises_value_error(self):
+        with pytest.raises(ValueError):
             JmuxModel(self.file_handler, self.file_handler)
-        with pytest.raises(Exception):
+        with pytest.raises(ValueError):
             JmuxModel(None, self.file_handler)
 
-    def test_throws_exception_when_file_handler_is_invalid(self):
-        with pytest.raises(Exception):
+    def test_invalid_file_handler_argument_raises_value_error(self):
+        with pytest.raises(ValueError):
             JmuxModel(self.multiplexer, self.multiplexer)
-        with pytest.raises(Exception):
+        with pytest.raises(ValueError):
             JmuxModel(self.multiplexer, None)
