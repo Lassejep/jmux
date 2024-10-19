@@ -2,8 +2,7 @@ import json
 import pathlib
 from dataclasses import asdict
 
-from src.jmux_session import JmuxSession
-from src.serialization import dict_to_JmuxSession
+from src.jmux_session import JmuxPane, JmuxSession, JmuxWindow
 
 
 class FileHandler:
@@ -36,7 +35,7 @@ class FileHandler:
             raise FileNotFoundError(f"Session file {session_name} does not exist")
         with session_file.open("r") as file:
             session_data = json.load(file)
-        session = dict_to_JmuxSession(session_data)
+        session = self._serialize_session(session_data)
         return session
 
     def delete_session(self, session_name: str) -> None:
@@ -47,3 +46,13 @@ class FileHandler:
         if not session_file.exists():
             raise FileNotFoundError(f"Session file {session_name} does not exist")
         session_file.unlink()
+
+    def _serialize_window(self, window: dict) -> JmuxWindow:
+        window["panes"] = [JmuxPane(**pane_data) for pane_data in window["panes"]]
+        return JmuxWindow(**window)
+
+    def _serialize_session(self, session: dict) -> JmuxSession:
+        session["windows"] = [
+            self._serialize_window(window_data) for window_data in session["windows"]
+        ]
+        return JmuxSession(**session)
