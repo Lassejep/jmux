@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 import pathlib
 
-from src import curses_gui, file_handler, session_manager, tmux_client
+from src.services import CursesGui, JmuxModel, JsonHandler, TmuxClient
 
 
 def create_manager(sessions_dir=None):
-    client = tmux_client.TmuxClient()
-    file_manager = file_handler.FileHandler(sessions_dir)
-    return session_manager.SessionManager(file_manager, client)
+    client = TmuxClient()
+    file_manager = JsonHandler(sessions_dir)
+    return JmuxModel(client, file_manager)
 
 
 def main():
     sessions_dir = pathlib.Path.home() / ".jmux"
     manager = create_manager(sessions_dir)
-    view = curses_gui.CursesGUI(manager)
+    view = CursesGui(manager)
     view.presenter.run()
 
 
