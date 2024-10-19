@@ -1,10 +1,10 @@
 import curses
 from typing import Callable, Concatenate, List, ParamSpec, Tuple, TypeVar
 
+from src.interfaces import Presenter
+from src.interfaces.view import View
 from src.jmux_presenter import JmuxPresenter
-from src.presenter import Presenter
 from src.session_manager import SessionManager
-from src.view import View
 
 Params = ParamSpec("Params")
 ReturnType = TypeVar("ReturnType")

@@ -1,8 +1,8 @@
 from typing import Optional
 
 from src.file_handler import FileHandler
+from src.interfaces import Multiplexer
 from src.jmux_session import JmuxSession
-from src.multiplexer import Multiplexer
 
 
 class SessionManager:

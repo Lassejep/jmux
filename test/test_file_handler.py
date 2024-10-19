@@ -1,54 +1,41 @@
 import json
 from dataclasses import asdict
-from pathlib import Path
 
 import pytest
 
+from src.file_handler import FileHandler
 from src.jmux_session import JmuxSession
-from src.session_manager import FileHandler
-
-
-@pytest.fixture
-def mock_folder(mocker):
-    mock_path_instance = mocker.MagicMock(spec=Path)
-    mocker.patch.object(Path, "__new__", return_value=mock_path_instance)
-    mock_path_instance.__truediv__.return_value = Path("/tmp/jmux/test.json")
-    mock_path_instance.__str__.return_value = "/tmp/jmux/test.json"
-    m_open = mocker.mock_open()
-    mock_path_instance.open = m_open
-    yield mock_path_instance
-
-
-@pytest.fixture
-def file_handler(mock_folder):
-    yield FileHandler(mock_folder)
 
 
 class TestConstructor:
+    @pytest.fixture(autouse=True)
+    def setup(self, mock_folder):
+        self.folder = mock_folder
+
     def test_invalid_sessions_folder_value_throws_value_error(self):
         with pytest.raises(ValueError):
             FileHandler("test")
 
-    def test_given_sessions_folder_does_not_exist_throws_value_error(self, mock_folder):
-        mock_folder.exists.return_value = False
+    def test_given_sessions_folder_does_not_exist_throws_value_error(self):
+        self.folder.exists.return_value = False
         with pytest.raises(ValueError):
-            FileHandler(mock_folder)
+            FileHandler(self.folder)
 
-    def test_throws_value_error_if_sessions_folder_is_empty_string(self, mock_folder):
+    def test_throws_value_error_if_sessions_folder_is_empty_string(self):
         with pytest.raises(ValueError):
             FileHandler("")
 
-    def test_given_valid_arguments_returns_instance_of_file_handler(self, mock_folder):
-        assert isinstance(FileHandler(mock_folder), FileHandler)
+    def test_given_valid_arguments_returns_instance_of_file_handler(self):
+        assert isinstance(FileHandler(self.folder), FileHandler)
 
 
 class TestSaveSession:
     @pytest.fixture(autouse=True)
-    def setup(self, mock_folder, file_handler, test_jmux_session):
+    def setup(self, mock_folder, jmux_session):
         self.folder = mock_folder
         self.file = mock_folder / "test.json"
-        self.file_handler = file_handler
-        self.jmux_session = test_jmux_session
+        self.jmux_session = jmux_session
+        self.file_handler = FileHandler(self.folder)
 
     def test_given_valid_arguments_returns_none(self):
         self.folder.exists.return_value = True
@@ -83,11 +70,11 @@ class TestSaveSession:
 
 class TestLoadSession:
     @pytest.fixture(autouse=True)
-    def setup(self, mock_folder, file_handler, test_jmux_session, mocker):
+    def setup(self, mock_folder, jmux_session, mocker):
         self.folder = mock_folder
-        self.file_handler = file_handler
         self.session_file = mock_folder / "test.json"
-        self.jmux_session = test_jmux_session
+        self.jmux_session = jmux_session
+        self.file_handler = FileHandler(self.folder)
         mocker.patch("json.load", return_value=asdict(self.jmux_session))
 
     def test_given_valid_arguments_returns_instance_of_JmuxSession(self):
@@ -108,10 +95,10 @@ class TestLoadSession:
 
 class TestDeleteSession:
     @pytest.fixture(autouse=True)
-    def setup(self, mock_folder, file_handler):
+    def setup(self, mock_folder):
         self.folder = mock_folder
-        self.file_handler = file_handler
         self.session_file = mock_folder / "test.json"
+        self.file_handler = FileHandler(self.folder)
 
     def test_throws_file_not_found_error_if_session_file_does_not_exist(self):
         self.session_file.exists.return_value = False
