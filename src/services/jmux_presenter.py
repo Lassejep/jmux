@@ -26,8 +26,8 @@ class InputKeys(Enum):
 
 
 class State(Enum):
-    RUNNING_SESSIONS_MENU = 0
-    SAVED_SESSIONS_MENU = 1
+    RUNNING_SESSIONS = 0
+    SAVED_SESSIONS = 1
     CREATE_SESSION = 2
     CONFIRMATION = 3
     RENAME_SESSION = 4
@@ -72,7 +72,7 @@ class JmuxPresenter(Presenter):
         """
         get all running sessions from the model and show them in a view menu.
         """
-        self.state_stack.put(State.RUNNING_SESSIONS_MENU)
+        self.state_stack.put(State.RUNNING_SESSIONS)
         self._update_sessions()
         session_names = [
             self._annotate_running_session(index, session)
@@ -92,7 +92,7 @@ class JmuxPresenter(Presenter):
         """
         Get all saved sessions from the model and show them in a view menu.
         """
-        self.state_stack.put(State.SAVED_SESSIONS_MENU)
+        self.state_stack.put(State.SAVED_SESSIONS)
         self._update_sessions()
         session_names = [
             self._annotate_saved_session(index, session)
@@ -127,9 +127,9 @@ class JmuxPresenter(Presenter):
                 self.rename_session()
             case InputKeys.LOWER_D.value:
                 state = self.state_stack.get()
-                if state == State.RUNNING_SESSIONS_MENU:
+                if state == State.RUNNING_SESSIONS:
                     self.kill_session()
-                elif state == State.SAVED_SESSIONS_MENU:
+                elif state == State.SAVED_SESSIONS:
                     self.delete_session()
                 self.state_stack.put(state)
             case _:
@@ -174,7 +174,7 @@ class JmuxPresenter(Presenter):
         previous_state = self.state_stack.get()
         session_list = (
             self.saved_sessions
-            if previous_state == State.SAVED_SESSIONS_MENU
+            if previous_state == State.SAVED_SESSIONS
             else self.running_sessions
         )
         if self._check_position(session_list):
@@ -206,7 +206,7 @@ class JmuxPresenter(Presenter):
         previous_state = self.state_stack.get()
         session_list = (
             self.saved_sessions
-            if previous_state == State.SAVED_SESSIONS_MENU
+            if previous_state == State.SAVED_SESSIONS
             else self.running_sessions
         )
         if self._check_position(session_list):
@@ -225,9 +225,9 @@ class JmuxPresenter(Presenter):
 
     def _return_to_previous_state(self, return_state: State) -> None:
         match return_state:
-            case State.RUNNING_SESSIONS_MENU:
+            case State.RUNNING_SESSIONS:
                 self.running_sessions_menu()
-            case State.SAVED_SESSIONS_MENU:
+            case State.SAVED_SESSIONS:
                 self.saved_sessions_menu()
             case State.CREATE_SESSION:
                 self.create_session()
@@ -257,7 +257,7 @@ class JmuxPresenter(Presenter):
         state = self.state_stack.get()
         session_list = (
             self.saved_sessions
-            if state == State.SAVED_SESSIONS_MENU
+            if state == State.SAVED_SESSIONS
             else self.running_sessions
         )
         self.state_stack.put(state)
