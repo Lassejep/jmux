@@ -25,16 +25,9 @@ class View(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def show_running_sessions(self, session_names: List[str]):
+    def show_menu(self, sessions: List[str]):
         """
-        Show a list of running sessions.
-        """
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def show_saved_sessions(self, session_names: List[str]):
-        """
-        Show a list of saved sessions.
+        Show a menu with `sessions`.
         """
         raise NotImplementedError
 
