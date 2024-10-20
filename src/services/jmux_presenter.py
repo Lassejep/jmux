@@ -29,6 +29,10 @@ class JmuxPresenter(Presenter):
         """
         Presenter for the GUI.
         """
+        if not view or not isinstance(view, View):
+            raise TypeError("view must be an instance of View")
+        if not model or not isinstance(model, Model):
+            raise TypeError("model must be an instance of Model")
         self.view = view
         self.model = model
         self.position = 0
@@ -41,6 +45,9 @@ class JmuxPresenter(Presenter):
         self.view.start()
 
     def stop(self) -> None:
+        """
+        Stop the presenter.
+        """
         self.view.stop()
         sys.exit(0)
 

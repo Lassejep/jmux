@@ -3,6 +3,38 @@ import pytest
 from src.services import JmuxPresenter
 
 
+class TestConstructor:
+    @pytest.fixture(autouse=True)
+    def setup(self, mock_view, mock_model):
+        self.view = mock_view
+        self.model = mock_model
+
+    def test_given_valid_arguments_returns_instance_of_jmux_presenter(self):
+        assert isinstance(JmuxPresenter(self.view, self.model), JmuxPresenter)
+
+    def test_with_invalid_view_value_throws_type_error(self):
+        with pytest.raises(TypeError):
+            JmuxPresenter(self.model, self.model)
+        with pytest.raises(TypeError):
+            JmuxPresenter(None, self.model)
+
+    def test_given_invalid_model_value_throws_type_error(self):
+        with pytest.raises(TypeError):
+            JmuxPresenter(self.view, self.view)
+        with pytest.raises(TypeError):
+            JmuxPresenter(self.view, None)
+
+    def test_initializes_position_to_zero(self):
+        presenter = JmuxPresenter(self.view, self.model)
+        assert presenter.position == 0
+
+    def test_updates_sessions_on_initialization(self):
+        JmuxPresenter(self.view, self.model)
+        self.model.list_saved_sessions.assert_called_once()
+        self.model.list_running_sessions.assert_called_once()
+        self.model.get_active_session.assert_called_once()
+
+
 class TestRunningSessionsMenu:
     @pytest.fixture(autouse=True)
     def setup(self, mocker, mock_view, mock_model, session_labels):
