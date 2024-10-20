@@ -182,7 +182,10 @@ class JmuxPresenter(Presenter):
         """
         Delete the selected session.
         """
-        pass
+        if self._check_position(self.saved_sessions) and self._get_confirmation(
+            "Permanently delete session? (y/N)", "Session not deleted"
+        ):
+            self.model.delete_session(self.saved_sessions[self.position - 1])
 
     def rename_session(self) -> None:
         """

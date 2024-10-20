@@ -318,3 +318,41 @@ class TestKillSession:
         self.view.get_confirmation.return_value = ord("n")
         self.presenter.kill_session()
         self.model.kill_session.assert_not_called()
+
+
+class TestDeleteSession:
+    @pytest.fixture(autouse=True)
+    def setup(self, mocker, mock_view, mock_model, session_labels):
+        self.model = mock_model
+        self.view = mock_view
+        self.mocker = mocker
+        self.labels = session_labels
+        self.presenter = JmuxPresenter(self.view, self.model)
+        self.presenter.state_stack = self.mocker.MagicMock()
+        self.presenter.position = 1
+        self.presenter.saved_sessions = self.labels
+        self.view.get_confirmation.return_value = ord("Y")
+
+    def test_position_zero_shows_error(self):
+        self.presenter.position = 0
+        self.presenter.delete_session()
+        self.view.show_error.assert_called_once()
+
+    def test_position_too_high_shows_error(self):
+        self.presenter.position = 3
+        self.presenter.delete_session()
+        self.view.show_error.assert_called_once()
+
+    def test_invalid_position_does_not_delete_session(self):
+        self.presenter.position = 0
+        self.presenter.delete_session()
+        self.model.delete_session.assert_not_called()
+
+    def test_valid_position_deletes_session(self):
+        self.presenter.delete_session()
+        self.model.delete_session.assert_called_once_with(self.labels[0])
+
+    def test_confirmation_no_does_not_delete_session(self):
+        self.view.get_confirmation.return_value = ord("n")
+        self.presenter.delete_session()
+        self.model.delete_session.assert_not_called()
