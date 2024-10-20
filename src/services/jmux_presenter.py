@@ -52,6 +52,8 @@ class JmuxPresenter(Presenter):
         """
         Start the presenter.
         """
+        if len(self.running_sessions) >= 0:
+            self.position = 0
         self.view.start()
 
     def stop(self) -> None:
@@ -121,6 +123,8 @@ class JmuxPresenter(Presenter):
                 self.create_session()
             case InputKeys.ENTER.value:
                 self.load_session()
+            case InputKeys.LOWER_R.value:
+                self.rename_session()
             case InputKeys.LOWER_D.value:
                 state = self.state_stack.get()
                 if state == State.RUNNING_SESSIONS_MENU:
@@ -128,8 +132,6 @@ class JmuxPresenter(Presenter):
                 elif state == State.SAVED_SESSIONS_MENU:
                     self.delete_session()
                 self.state_stack.put(state)
-            case InputKeys.LOWER_R.value:
-                self.rename_session()
             case _:
                 error_message = f"Invalid key code: {key}"
                 self.view.show_error(error_message)
@@ -140,7 +142,7 @@ class JmuxPresenter(Presenter):
             self.view.cursor_up()
 
     def _move_cursor_down(self) -> None:
-        if self.position < len(self.saved_sessions) - 1:
+        if self.position < len(self._get_session_list()) - 1:
             self.position += 1
             self.view.cursor_down()
 
@@ -250,3 +252,13 @@ class JmuxPresenter(Presenter):
             self.view.show_error(error_message)
             return False
         return True
+
+    def _get_session_list(self) -> list[SessionLabel]:
+        state = self.state_stack.get()
+        session_list = (
+            self.saved_sessions
+            if state == State.SAVED_SESSIONS_MENU
+            else self.running_sessions
+        )
+        self.state_stack.put(state)
+        return session_list
