@@ -11,3 +11,4 @@ class Commands(Enum):
     DELETE_SESSION = 6
     SAVE_SESSION = 7
     KILL_SESSION = 8
+    UNKNOWN = 9

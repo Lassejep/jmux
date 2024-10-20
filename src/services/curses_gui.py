@@ -2,6 +2,7 @@ import curses
 from typing import Callable, Concatenate, List, ParamSpec, TypeVar
 
 from src.interfaces import Model, Presenter, View
+from src.models import Commands
 from src.services.curses_presenter import CursesPresenter
 
 Params = ParamSpec("Params")
@@ -14,6 +15,7 @@ class CursesGui(View):
         A Curses GUI that implements the View interface.
         """
         self.presenter: Presenter = CursesPresenter(self, model)
+        self.running: bool = False
 
     @staticmethod
     def _static_cursor(
@@ -33,13 +35,8 @@ class CursesGui(View):
         """
         Start the view.
         """
+        self.running = True
         curses.wrapper(self._start_curses)
-
-    def stop(self) -> None:
-        """
-        Stop the view.
-        """
-        self.show_error("Exiting...")
 
     def _start_curses(self, stdscr) -> None:
         curses.cbreak(True)
@@ -62,6 +59,39 @@ class CursesGui(View):
         self.screen.keypad(True)
         self.msgbox = self.screen.subpad(1, size[1] - 1, size[0] - 1, 0)
 
+    def stop(self) -> None:
+        """
+        Stop the view.
+        """
+        self.running = False
+        self.show_error("Exiting...")
+
+    def get_input(self) -> Commands:
+        """
+        Get user input.
+        """
+        command = Commands.UNKNOWN
+        while self.running:
+            command = self._key_to_command(self.screen.getch())
+        return command
+
+    def _key_to_command(self, key: int) -> Commands:
+        command_to_keys = {
+            Commands.MOVE_DOWN: [curses.KEY_DOWN, ord("j")],
+            Commands.MOVE_UP: [curses.KEY_UP, ord("k")],
+            Commands.EXIT: [ord("q"), curses.KEY_EXIT, 27],
+            Commands.CREATE_SESSION: [ord("o")],
+            Commands.SAVE_SESSION: [ord("s")],
+            Commands.RENAME_SESSION: [ord("r")],
+            Commands.DELETE_SESSION: [ord("d")],
+        }
+        key_to_command = {}
+        for command, keys in command_to_keys.items():
+            for key in keys:
+                key_to_command[key] = command
+
+        return key_to_command.get(key, Commands.UNKNOWN)
+
     def show_menu(self, sessions: List[str]) -> None:
         """
         Show the menu.
@@ -73,10 +103,6 @@ class CursesGui(View):
         self.screen.move(self.presenter.position + 1, 0)
         self.screen.chgat(self.presenter.position + 1, 0, -1, curses.A_REVERSE)
         self.screen.refresh()
-        while True:
-            key = self.screen.getch()
-            self.presenter.handle_input(key)
-            self.screen.refresh()
 
     @_static_cursor
     def show_error(self, message: str) -> None:
@@ -110,14 +136,14 @@ class CursesGui(View):
         self.screen.chgat(new_y, 0, -1, curses.A_REVERSE)
 
     @_static_cursor
-    def get_confirmation(self, message: str) -> int:
+    def get_confirmation(self, message: str) -> bool:
         """
         Show the `message` and get return the key pressed.
         """
         self.msgbox.clear()
         self.msgbox.addstr(message)
         self.msgbox.refresh()
-        return self.msgbox.getch()
+        return self.msgbox.getch() in [ord("y"), ord("Y")]
 
     @_static_cursor
     def create_new_session(self) -> str:
