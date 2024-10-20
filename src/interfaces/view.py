@@ -71,3 +71,9 @@ class View(abc.ABC):
         Show a prompt to create a new session and return the name of the session.
         """
         raise NotImplementedError
+
+    def rename_session(self, session_name: str) -> str:
+        """
+        Show a prompt to rename a session and return the new name.
+        """
+        raise NotImplementedError
