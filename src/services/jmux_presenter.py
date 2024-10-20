@@ -135,6 +135,7 @@ class JmuxPresenter(Presenter):
             case _:
                 error_message = f"Invalid key code: {key}"
                 self.view.show_error(error_message)
+        self._return_to_previous_state(self.state_stack.get())
 
     def _move_cursor_up(self) -> None:
         if self.position > 0:
@@ -150,13 +151,11 @@ class JmuxPresenter(Presenter):
         """
         Create a new session.
         """
-        previous_state = self.state_stack.get()
         self.state_stack.put(State.CREATE_SESSION)
         session_name = self.view.create_new_session()
         self.state_stack.get()
         if session_name and not session_name.isspace():
             self.model.create_session(session_name)
-        self._return_to_previous_state(previous_state)
 
     def save_session(self) -> None:
         """
@@ -171,15 +170,9 @@ class JmuxPresenter(Presenter):
         """
         Load the selected session.
         """
-        previous_state = self.state_stack.get()
-        session_list = (
-            self.saved_sessions
-            if previous_state == State.SAVED_SESSIONS
-            else self.running_sessions
-        )
+        session_list = self._get_session_list()
         if self._check_position(session_list):
             self.model.load_session(session_list[self.position])
-        self._return_to_previous_state(previous_state)
 
     def kill_session(self) -> None:
         """
@@ -188,7 +181,14 @@ class JmuxPresenter(Presenter):
         if self._check_position(self.running_sessions) and self._get_confirmation(
             "Kill session? (y/N)", "Session not killed"
         ):
-            self.model.kill_session(self.running_sessions[self.position])
+            try:
+                self.model.kill_session(self.running_sessions[self.position])
+            except ValueError as error:
+                if "Cannot kill the active session" in str(error) and self.position > 0:
+                    self.model.load_session(self.running_sessions[self.position - 1])
+                    self.model.kill_session(self.running_sessions[self.position])
+                else:
+                    self.view.show_error(str(error))
 
     def delete_session(self) -> None:
         """
@@ -203,12 +203,7 @@ class JmuxPresenter(Presenter):
         """
         Rename the selected session.
         """
-        previous_state = self.state_stack.get()
-        session_list = (
-            self.saved_sessions
-            if previous_state == State.SAVED_SESSIONS
-            else self.running_sessions
-        )
+        session_list = self._get_session_list()
         if self._check_position(session_list):
             self.state_stack.put(State.RENAME_SESSION)
             new_name = self.view.rename_session(session_list[self.position].name)
@@ -221,21 +216,21 @@ class JmuxPresenter(Presenter):
                 )
             ):
                 self.model.rename_session(session_list[self.position], new_name)
-        self._return_to_previous_state(previous_state)
 
     def _return_to_previous_state(self, return_state: State) -> None:
         match return_state:
             case State.RUNNING_SESSIONS:
+                if not self._check_position(self.running_sessions):
+                    self.position = 0
                 self.running_sessions_menu()
             case State.SAVED_SESSIONS:
+                if not self._check_position(self.saved_sessions):
+                    self.position = 0
                 self.saved_sessions_menu()
-            case State.CREATE_SESSION:
-                self.create_session()
-            case State.CONFIRMATION:
-                self.view.show_error("Could not return to previous state")
-                self.running_sessions_menu()
             case _:
                 self.view.show_error("Could not return to previous state")
+                if not self._check_position(self.running_sessions):
+                    self.position = 0
                 self.running_sessions_menu()
 
     def _check_position(self, session_list: list[SessionLabel]) -> bool:
