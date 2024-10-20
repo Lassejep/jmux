@@ -35,7 +35,7 @@ class Multiplexer(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_session(self, session_id: str) -> JmuxSession:
+    def get_session(self, label: SessionLabel) -> JmuxSession:
         """
         Get the data of the session with the id `session_id`.
         """
@@ -49,14 +49,14 @@ class Multiplexer(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def kill_session(self, session: JmuxSession) -> None:
+    def kill_session(self, label: SessionLabel) -> None:
         """
         Kill the session with the data in `session`.
         """
         raise NotImplementedError
 
     @abc.abstractmethod
-    def rename_session(self, session: JmuxSession, new_name: str) -> None:
+    def rename_session(self, label: SessionLabel, new_name: str) -> None:
         """
         Rename the sessions name to `new_name` and update the session object.
         """
@@ -66,5 +66,12 @@ class Multiplexer(abc.ABC):
     def create_new_session(self, session_name: str) -> None:
         """
         Create a new session with the name `session_name`.
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def focus_session(self, label: SessionLabel) -> None:
+        """
+        Focus the session with the data in `session`.
         """
         raise NotImplementedError

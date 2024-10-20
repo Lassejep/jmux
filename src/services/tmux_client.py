@@ -41,16 +41,15 @@ class TmuxClient(Multiplexer):
         sessions = response.stdout.split("\n")
         return [SessionLabel(*session.split(":")) for session in sessions if session]
 
-    def get_session(self, session_id: str) -> JmuxSession:
+    def get_session(self, label: SessionLabel) -> JmuxSession:
         """
         Get the data of the tmux session with the id `session_id`.
         """
         sessions = self.list_sessions()
-        for session_label in sessions:
-            if session_label.id == session_id:
-                jmux_windows = self._get_windows(session_id)
-                return JmuxSession(session_label.id, session_label.name, jmux_windows)
-        raise ValueError(f"Session with id {session_id} not found")
+        if label not in sessions:
+            raise ValueError(f"Session {label.name} not found")
+        jmux_windows = self._get_windows(label.id)
+        return JmuxSession(label.id, label.name, jmux_windows)
 
     def _get_windows(self, session_id: str) -> list[JmuxWindow]:
         command = [
@@ -167,32 +166,25 @@ class TmuxClient(Multiplexer):
         session_id, session_name = response.stdout.strip().split(":")
         return SessionLabel(session_id, session_name)
 
-    def kill_session(self, session: JmuxSession) -> None:
+    def kill_session(self, label: SessionLabel) -> None:
         """
         Kill the tmux session with the data in `session`.
         """
-        if not any(
-            existing_session.id == session.id
-            for existing_session in self.list_sessions()
-        ):
-            raise ValueError(f"Session with id {session.id} not found")
-        if session.id == self.get_current_session_label().id:
+        if label not in self.list_sessions():
+            raise ValueError(f"Session {label.name} not found")
+        if label == self.get_current_session_label():
             raise ValueError("Cannot kill the current session")
-        command = [self._bin, "kill-session", "-t", session.id]
+        command = [self._bin, "kill-session", "-t", label.id]
         subprocess.run(command, check=True)
 
-    def rename_session(self, session: JmuxSession, new_name: str) -> None:
+    def rename_session(self, label: SessionLabel, new_name: str) -> None:
         """
-        Updates the JmuxSession object with the new name,
-        then renames the tmux session to the new name if it exists.
+        Rename the tmux session with the data in `label` to `new_name`.
         """
-        session.name = new_name
-        if not any(
-            existing_session.id == session.id
-            for existing_session in self.list_sessions()
-        ):
-            raise ValueError(f"Session with id {session.id} not found")
-        command = [self._bin, "rename-session", "-t", session.id, session.name]
+        if label not in self.list_sessions():
+            raise ValueError(f"Session {label.name} not found")
+        label.name = new_name
+        command = [self._bin, "rename-session", "-t", label.id, label.name]
         subprocess.run(command, check=True)
 
     def create_new_session(self, session_name: str) -> None:
@@ -202,4 +194,13 @@ class TmuxClient(Multiplexer):
         command = [self._bin, "new-session", "-ds", session_name]
         subprocess.run(command, check=True)
         command = [self._bin, "switch-client", "-t", session_name]
+        subprocess.run(command, check=True)
+
+    def focus_session(self, label: SessionLabel) -> None:
+        """
+        Focus the tmux session with the data in `label`.
+        """
+        if label not in self.list_sessions():
+            raise ValueError(f"Session {label.name} not found")
+        command = [self._bin, "switch-client", "-t", label.id]
         subprocess.run(command, check=True)
