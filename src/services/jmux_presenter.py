@@ -29,6 +29,7 @@ class State(Enum):
     RUNNING_SESSIONS_MENU = 0
     SAVED_SESSIONS_MENU = 1
     CREATE_SESSION = 2
+    SAVE_SESSION = 3
 
 
 class JmuxPresenter(Presenter):
@@ -137,22 +138,39 @@ class JmuxPresenter(Presenter):
         """
         Create a new session.
         """
+        previous_state = self.state_stack.get()
         self.state_stack.put(State.CREATE_SESSION)
         session_name = self.view.create_new_session()
         self.state_stack.get()
         if session_name and not session_name.isspace():
             self.model.create_session(session_name)
-        return_state = self.state_stack.get()
-        if return_state == State.RUNNING_SESSIONS_MENU:
-            self.running_sessions_menu()
-        elif return_state == State.SAVED_SESSIONS_MENU:
-            self.saved_sessions_menu()
+        self._return_to_previous_state(previous_state)
 
     def save_session(self) -> None:
         """
         Save the selected session.
         """
-        pass
+        previous_state = self.state_stack.get()
+        session_list = (
+            self.saved_sessions
+            if previous_state == State.SAVED_SESSIONS_MENU
+            else self.running_sessions
+        )
+        if self.position < 1 or self.position > len(session_list):
+            self.view.show_error("Invalid session")
+            self._return_to_previous_state(previous_state)
+            return
+        session = session_list[self.position - 1]
+        self.state_stack.put(State.SAVE_SESSION)
+        confirmation = self.view.get_confirmation(f"Save session {session.name}? (Y/n)")
+        self.state_stack.get()
+        if confirmation in (
+            InputKeys.LOWER_Y.value,
+            InputKeys.UPPER_Y.value,
+            InputKeys.ENTER.value,
+        ):
+            self.model.save_session(session)
+        self._return_to_previous_state(previous_state)
 
     def load_session(self) -> None:
         """
@@ -177,3 +195,17 @@ class JmuxPresenter(Presenter):
         Rename the selected session.
         """
         pass
+
+    def _return_to_previous_state(self, return_state: State) -> None:
+        match return_state:
+            case State.RUNNING_SESSIONS_MENU:
+                self.running_sessions_menu()
+            case State.SAVED_SESSIONS_MENU:
+                self.saved_sessions_menu()
+            case State.CREATE_SESSION:
+                self.create_session()
+            case State.SAVE_SESSION:
+                self.save_session()
+            case _:
+                self.view.show_error("Could not return to previous state")
+                self.running_sessions_menu()
