@@ -1,5 +1,5 @@
 import curses
-from typing import Callable, Concatenate, List, ParamSpec, Tuple, TypeVar
+from typing import Callable, Concatenate, List, ParamSpec, TypeVar
 
 from src.interfaces import Model, Presenter, View
 from src.services.jmux_presenter import JmuxPresenter
@@ -62,16 +62,16 @@ class CursesGui(View):
         self.screen.keypad(True)
         self.msgbox = self.screen.subpad(1, size[1] - 1, size[0] - 1, 0)
 
-    def show_menu(self, sessions: List[Tuple[int, int, str]]) -> None:
+    def show_menu(self, sessions: List[str]) -> None:
         """
         Show the menu.
         """
         self.screen.clear()
         self.screen.addstr(0, 0, "Select an action:")
-        for session in sessions:
-            self.screen.addstr(*session)
-        self.screen.move(1, 0)
-        self.screen.chgat(1, 0, -1, curses.A_REVERSE)
+        for index, session in enumerate(sessions):
+            self.screen.addstr((index + 1), 0, session)
+        self.screen.move(self.presenter.position + 1, 0)
+        self.screen.chgat(self.presenter.position + 1, 0, -1, curses.A_REVERSE)
         self.screen.refresh()
         while True:
             key = self.screen.getch()
@@ -93,8 +93,8 @@ class CursesGui(View):
         """
         cursor_y, cursor_x = curses.getsyx()
         new_y = cursor_y + 1
-        self._move_highlight(new_y)
         self.screen.move(new_y, cursor_x)
+        self._move_highlight(cursor_y, new_y)
 
     def cursor_up(self) -> None:
         """
@@ -102,14 +102,14 @@ class CursesGui(View):
         """
         cursor_y, cursor_x = curses.getsyx()
         new_y = cursor_y - 1
-        self._move_highlight(new_y)
         self.screen.move(new_y, cursor_x)
+        self._move_highlight(cursor_y, new_y)
 
-    def _move_highlight(self, new_y: int) -> None:
-        cursor_y, cursor_x = curses.getsyx()
-        self.screen.chgat(cursor_y, 0, -1, curses.A_NORMAL)
+    def _move_highlight(self, old_y: int, new_y: int) -> None:
+        self.screen.chgat(old_y, 0, -1, curses.A_NORMAL)
         self.screen.chgat(new_y, 0, -1, curses.A_REVERSE)
 
+    @_static_cursor
     def get_confirmation(self, message: str) -> int:
         """
         Show the `message` and get return the key pressed.
@@ -118,3 +118,29 @@ class CursesGui(View):
         self.msgbox.addstr(message)
         self.msgbox.refresh()
         return self.msgbox.getch()
+
+    @_static_cursor
+    def create_new_session(self) -> str:
+        """
+        Show a prompt to create a new session and return the name of the session.
+        """
+        self.msgbox.clear()
+        self.msgbox.addstr("Enter a name for the new session: ")
+        self.msgbox.refresh()
+        curses.echo()
+        name = self.msgbox.getstr().decode("utf-8")
+        curses.noecho()
+        return name
+
+    @_static_cursor
+    def rename_session(self, session_name: str) -> str:
+        """
+        Show a prompt to rename a session and return the new name.
+        """
+        self.msgbox.clear()
+        self.msgbox.addstr("Enter a new name for the session: ")
+        self.msgbox.refresh()
+        curses.echo()
+        name = self.msgbox.getstr().decode("utf-8")
+        curses.noecho()
+        return name
