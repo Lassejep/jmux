@@ -26,9 +26,9 @@ class TestConstructor:
         with pytest.raises(TypeError):
             JmuxPresenter(self.view, None)
 
-    def test_initializes_position_to_zero(self):
+    def test_initializes_position_to_negative_one(self):
         presenter = JmuxPresenter(self.view, self.model)
-        assert presenter.position == 0
+        assert presenter.position == -1
 
     def test_initializes_state_stack_to_empty_lifo_queue(self):
         presenter = JmuxPresenter(self.view, self.model)
@@ -52,7 +52,7 @@ class TestRunningSessionsMenu:
 
     def test_updates_view_with_running_sessions(self):
         self.presenter.running_sessions_menu()
-        self.view.show_running_sessions.assert_called_once()
+        self.view.show_menu.assert_called_once()
 
     def test_updates_running_sessions_from_model(self):
         call_count = self.model.list_running_sessions.call_count
@@ -72,7 +72,7 @@ class TestRunningSessionsMenu:
     def test_annotates_running_session_name(self):
         self.model.list_running_sessions.return_value = self.labels
         self.presenter.running_sessions_menu()
-        self.view.show_running_sessions.assert_called_once_with(
+        self.view.show_menu.assert_called_once_with(
             [f"1. {self.labels[0].name}", f"2. {self.labels[1].name}"]
         )
 
@@ -80,7 +80,7 @@ class TestRunningSessionsMenu:
         self.model.list_running_sessions.return_value = self.labels
         self.model.list_saved_sessions.return_value = [self.labels[1]]
         self.presenter.running_sessions_menu()
-        self.view.show_running_sessions.assert_called_once_with(
+        self.view.show_menu.assert_called_once_with(
             [f"1. {self.labels[0].name}", f"2. {self.labels[1].name} (saved)"]
         )
 
@@ -88,7 +88,7 @@ class TestRunningSessionsMenu:
         self.model.list_running_sessions.return_value = self.labels
         self.model.get_active_session.return_value = self.labels[1]
         self.presenter.running_sessions_menu()
-        self.view.show_running_sessions.assert_called_once_with(
+        self.view.show_menu.assert_called_once_with(
             [f"1. {self.labels[0].name}", f"2. {self.labels[1].name}*"]
         )
 
@@ -97,7 +97,7 @@ class TestRunningSessionsMenu:
         self.model.get_active_session.return_value = self.labels[1]
         self.model.list_saved_sessions.return_value = [self.labels[1]]
         self.presenter.running_sessions_menu()
-        self.view.show_running_sessions.assert_called_once_with(
+        self.view.show_menu.assert_called_once_with(
             [f"1. {self.labels[0].name}", f"2. {self.labels[1].name}* (saved)"]
         )
 
@@ -116,7 +116,7 @@ class TestSavedSessionsMenu:
 
     def test_updates_view_with_saved_sessions(self):
         self.presenter.saved_sessions_menu()
-        self.view.show_saved_sessions.assert_called_once()
+        self.view.show_menu.assert_called_once()
 
     def test_updates_running_sessions_from_model(self):
         call_count = self.model.list_running_sessions.call_count
@@ -136,7 +136,7 @@ class TestSavedSessionsMenu:
     def test_annotates_saved_session_name(self):
         self.model.list_saved_sessions.return_value = self.labels
         self.presenter.saved_sessions_menu()
-        self.view.show_saved_sessions.assert_called_once_with(
+        self.view.show_menu.assert_called_once_with(
             [f"1. {self.labels[0].name}", f"2. {self.labels[1].name}"]
         )
 
@@ -144,7 +144,7 @@ class TestSavedSessionsMenu:
         self.model.list_saved_sessions.return_value = self.labels
         self.model.get_active_session.return_value = self.labels[1]
         self.presenter.saved_sessions_menu()
-        self.view.show_saved_sessions.assert_called_once_with(
+        self.view.show_menu.assert_called_once_with(
             [f"1. {self.labels[0].name}", f"2. {self.labels[1].name}*"]
         )
 
@@ -153,7 +153,7 @@ class TestSavedSessionsMenu:
         self.model.get_active_session.return_value = self.labels[1]
         self.model.list_running_sessions.return_value = [self.labels[1]]
         self.presenter.saved_sessions_menu()
-        self.view.show_saved_sessions.assert_called_once_with(
+        self.view.show_menu.assert_called_once_with(
             [f"1. {self.labels[0].name}", f"2. {self.labels[1].name}* (running)"]
         )
 
@@ -200,12 +200,12 @@ class TestCreateSession:
     ):
         self.presenter.state_stack.get.return_value = State.RUNNING_SESSIONS_MENU
         self.presenter.create_session()
-        self.view.show_running_sessions.assert_called_once()
+        self.view.show_menu.assert_called_once()
 
     def test_previous_state_is_saved_sessions_menu_returns_to_saved_sessions_menu(self):
         self.presenter.state_stack.get.return_value = State.SAVED_SESSIONS_MENU
         self.presenter.create_session()
-        self.view.show_saved_sessions.assert_called_once()
+        self.view.show_menu.assert_called_once()
 
 
 class TestSaveSession:
@@ -217,12 +217,12 @@ class TestSaveSession:
         self.labels = session_labels
         self.presenter = JmuxPresenter(self.view, self.model)
         self.presenter.state_stack = self.mocker.MagicMock()
-        self.presenter.position = 1
+        self.presenter.position = 0
         self.presenter.running_sessions = self.labels
         self.view.get_confirmation.return_value = ord("Y")
 
-    def test_shows_error_if_position_is_zero(self):
-        self.presenter.position = 0
+    def test_shows_error_if_position_is_negative(self):
+        self.presenter.position = -1
         self.presenter.save_session()
         self.view.show_error.assert_called_once()
 
@@ -259,7 +259,7 @@ class TestLoadSession:
         self.labels = session_labels
         self.presenter = JmuxPresenter(self.view, self.model)
         self.presenter.state_stack = self.mocker.MagicMock()
-        self.presenter.position = 1
+        self.presenter.position = 0
         self.presenter.saved_sessions = self.labels
         self.presenter.state_stack.get.return_value = State.SAVED_SESSIONS_MENU
 
@@ -268,18 +268,19 @@ class TestLoadSession:
         self.model.load_session.assert_called_once_with(self.labels[0])
 
     def test_invalid_position_does_not_load_session(self):
-        self.presenter.position = 0
+        self.presenter.position = -1
         self.presenter.load_session()
         self.model.load_session.assert_not_called()
 
-    def test_invalid_position_returns_to_previous_state(self):
-        self.presenter.position = 0
+    def test_returns_to_previous_state(self):
+        self.mocker.patch.object(self.presenter, "saved_sessions_menu")
+        self.mocker.patch.object(self.presenter, "running_sessions_menu")
         self.presenter.state_stack.get.return_value = State.SAVED_SESSIONS_MENU
         self.presenter.load_session()
-        self.view.show_saved_sessions.assert_called_once()
+        self.presenter.saved_sessions_menu.assert_called_once()
         self.presenter.state_stack.get.return_value = State.RUNNING_SESSIONS_MENU
         self.presenter.load_session()
-        self.view.show_running_sessions.assert_called_once()
+        self.presenter.running_sessions_menu.assert_called_once()
 
 
 class TestKillSession:
@@ -291,12 +292,12 @@ class TestKillSession:
         self.labels = session_labels
         self.presenter = JmuxPresenter(self.view, self.model)
         self.presenter.state_stack = self.mocker.MagicMock()
-        self.presenter.position = 1
+        self.presenter.position = 0
         self.presenter.running_sessions = self.labels
         self.view.get_confirmation.return_value = ord("Y")
 
-    def test_position_zero_shows_error(self):
-        self.presenter.position = 0
+    def test_negative_position_shows_error(self):
+        self.presenter.position = -1
         self.presenter.kill_session()
         self.view.show_error.assert_called_once()
 
@@ -306,7 +307,7 @@ class TestKillSession:
         self.view.show_error.assert_called_once()
 
     def test_invalid_position_does_not_kill_session(self):
-        self.presenter.position = 0
+        self.presenter.position = -1
         self.presenter.kill_session()
         self.model.kill_session.assert_not_called()
 
@@ -329,12 +330,12 @@ class TestDeleteSession:
         self.labels = session_labels
         self.presenter = JmuxPresenter(self.view, self.model)
         self.presenter.state_stack = self.mocker.MagicMock()
-        self.presenter.position = 1
+        self.presenter.position = 0
         self.presenter.saved_sessions = self.labels
         self.view.get_confirmation.return_value = ord("Y")
 
-    def test_position_zero_shows_error(self):
-        self.presenter.position = 0
+    def test_negative_position_shows_error(self):
+        self.presenter.position = -1
         self.presenter.delete_session()
         self.view.show_error.assert_called_once()
 
@@ -344,7 +345,7 @@ class TestDeleteSession:
         self.view.show_error.assert_called_once()
 
     def test_invalid_position_does_not_delete_session(self):
-        self.presenter.position = 0
+        self.presenter.position = -1
         self.presenter.delete_session()
         self.model.delete_session.assert_not_called()
 
@@ -367,14 +368,14 @@ class TestRenameSession:
         self.labels = session_labels
         self.presenter = JmuxPresenter(self.view, self.model)
         self.presenter.state_stack = self.mocker.MagicMock()
-        self.presenter.position = 1
+        self.presenter.position = 0
         self.presenter.saved_sessions = self.labels
         self.presenter.state_stack.get.return_value = State.SAVED_SESSIONS_MENU
         self.view.rename_session.return_value = "new name"
         self.view.get_confirmation.return_value = ord("Y")
 
-    def test_position_zero_shows_error(self):
-        self.presenter.position = 0
+    def test_negative_position_shows_error(self):
+        self.presenter.position = -1
         self.presenter.rename_session()
         self.view.show_error.assert_called_once()
 
@@ -384,7 +385,7 @@ class TestRenameSession:
         self.view.show_error.assert_called_once()
 
     def test_invalid_position_does_not_rename_session(self):
-        self.presenter.position = 0
+        self.presenter.position = -1
         self.presenter.rename_session()
         self.model.rename_session.assert_not_called()
 
