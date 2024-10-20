@@ -41,7 +41,7 @@ class View(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_confirmation(self, message: str) -> int:
+    def get_confirmation(self, message: str) -> bool:
         """
         Show a confirmation `message` and return the user's key input as an int.
         """

@@ -1,36 +1,8 @@
 import sys
-from enum import Enum
 from queue import LifoQueue
 
 from src.interfaces import Model, Presenter, View
-from src.models import SessionLabel
-
-
-class InputKeys(Enum):
-    ESCAPE = 27
-    ENTER = 10
-    UP = 259
-    DOWN = 258
-    LOWER_Q = ord("q")
-    LOWER_J = ord("j")
-    LOWER_K = ord("k")
-    LOWER_D = ord("d")
-    LOWER_A = ord("a")
-    LOWER_R = ord("r")
-    LOWER_S = ord("s")
-    LOWER_Y = ord("y")
-    LOWER_N = ord("n")
-
-    UPPER_Y = ord("Y")
-    UPPER_N = ord("N")
-
-
-class State(Enum):
-    RUNNING_SESSIONS = 0
-    SAVED_SESSIONS = 1
-    CREATE_SESSION = 2
-    CONFIRMATION = 3
-    RENAME_SESSION = 4
+from src.models import Commands, CursesStates, SessionLabel
 
 
 class CursesPresenter(Presenter):
@@ -72,7 +44,7 @@ class CursesPresenter(Presenter):
         """
         get all running sessions from the model and show them in a view menu.
         """
-        self.state_stack.put(State.RUNNING_SESSIONS)
+        self.state_stack.put(CursesStates.RUNNING_SESSIONS)
         if not self._check_position(self.running_sessions):
             self.position = 0
         session_names = [
@@ -93,7 +65,7 @@ class CursesPresenter(Presenter):
         """
         Get all saved sessions from the model and show them in a view menu.
         """
-        self.state_stack.put(State.SAVED_SESSIONS)
+        self.state_stack.put(CursesStates.SAVED_SESSIONS)
         if not self._check_position(self.saved_sessions):
             self.position = 0
         session_names = [
@@ -110,32 +82,32 @@ class CursesPresenter(Presenter):
             name += " (running)"
         return name
 
-    def handle_input(self, key: int) -> None:
+    def handle_input(self, command: Commands) -> None:
         """
         Handle user input.
         """
-        match key:
-            case InputKeys.LOWER_Q.value | InputKeys.ESCAPE.value:
+        match command:
+            case Commands.EXIT:
                 self.stop()
-            case InputKeys.LOWER_K.value | InputKeys.UP.value:
+            case Commands.MOVE_UP:
                 self._move_cursor_up()
-            case InputKeys.LOWER_J.value | InputKeys.DOWN.value:
+            case Commands.MOVE_DOWN:
                 self._move_cursor_down()
-            case InputKeys.LOWER_A.value:
+            case Commands.CREATE_SESSION:
                 self.create_session()
-            case InputKeys.ENTER.value:
+            case Commands.LOAD_SESSION:
                 self.load_session()
-            case InputKeys.LOWER_R.value:
+            case Commands.RENAME_SESSION:
                 self.rename_session()
-            case InputKeys.LOWER_D.value:
+            case Commands.DELETE_SESSION:
                 state = self.state_stack.get()
-                if state == State.RUNNING_SESSIONS:
+                if state == CursesStates.RUNNING_SESSIONS:
                     self.kill_session()
-                elif state == State.SAVED_SESSIONS:
+                elif state == CursesStates.SAVED_SESSIONS:
                     self.delete_session()
                 self.state_stack.put(state)
             case _:
-                error_message = f"Invalid key code: {key}"
+                error_message = f"Invalid command: {command.value}"
                 self.view.show_error(error_message)
         self._update_state()
 
@@ -153,7 +125,7 @@ class CursesPresenter(Presenter):
         """
         Create a new session.
         """
-        self.state_stack.put(State.CREATE_SESSION)
+        self.state_stack.put(CursesStates.CREATE_SESSION)
         session_name = self.view.create_new_session()
         self.state_stack.get()
         if session_name and not session_name.isspace():
@@ -207,7 +179,7 @@ class CursesPresenter(Presenter):
         """
         session_list = self._get_session_list()
         if self._check_position(session_list):
-            self.state_stack.put(State.RENAME_SESSION)
+            self.state_stack.put(CursesStates.RENAME_SESSION)
             new_name = self.view.rename_session(session_list[self.position].name)
             self.state_stack.get()
             if (
@@ -224,9 +196,9 @@ class CursesPresenter(Presenter):
             self.stop()
         self._update_sessions()
         match self.state_stack.get():
-            case State.RUNNING_SESSIONS:
+            case CursesStates.RUNNING_SESSIONS:
                 self.running_sessions_menu()
-            case State.SAVED_SESSIONS:
+            case CursesStates.SAVED_SESSIONS:
                 self.saved_sessions_menu()
             case _:
                 self.view.show_error("Could not return to previous state")
@@ -239,10 +211,10 @@ class CursesPresenter(Presenter):
         return True
 
     def _get_confirmation(self, prompt: str, error_message: str) -> bool:
-        self.state_stack.put(State.CONFIRMATION)
+        self.state_stack.put(CursesStates.CONFIRMATION)
         confirmation = self.view.get_confirmation(prompt)
         self.state_stack.get()
-        if confirmation not in (InputKeys.LOWER_Y.value, InputKeys.UPPER_Y.value):
+        if not confirmation:
             self.view.show_error(error_message)
             return False
         return True
@@ -251,7 +223,7 @@ class CursesPresenter(Presenter):
         state = self.state_stack.get()
         session_list = (
             self.saved_sessions
-            if state == State.SAVED_SESSIONS
+            if state == CursesStates.SAVED_SESSIONS
             else self.running_sessions
         )
         self.state_stack.put(state)

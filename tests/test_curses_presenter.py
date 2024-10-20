@@ -2,8 +2,8 @@ from queue import LifoQueue
 
 import pytest
 
+from src.models import CursesStates
 from src.services import CursesPresenter
-from src.services.curses_presenter import State
 
 
 class TestConstructor:
@@ -86,7 +86,7 @@ class TestRunningSessionsMenu:
 
     def test_sets_state_stack_to_running_sessions_menu(self):
         self.presenter.running_sessions_menu()
-        assert self.presenter.state_stack.get() == State.RUNNING_SESSIONS
+        assert self.presenter.state_stack.get() == CursesStates.RUNNING_SESSIONS
 
 
 class TestSavedSessionsMenu:
@@ -132,7 +132,7 @@ class TestSavedSessionsMenu:
 
     def test_sets_state_stack_to_saved_sessions_menu(self):
         self.presenter.saved_sessions_menu()
-        assert self.presenter.state_stack.get() == State.SAVED_SESSIONS
+        assert self.presenter.state_stack.get() == CursesStates.SAVED_SESSIONS
 
 
 class TestCreateSession:
@@ -147,7 +147,7 @@ class TestCreateSession:
 
     def test_adds_create_session_to_state_stack(self):
         self.presenter.create_session()
-        expected_call = self.mocker.call(State.CREATE_SESSION)
+        expected_call = self.mocker.call(CursesStates.CREATE_SESSION)
         count = self.presenter.state_stack.put.mock_calls.count(expected_call)
         assert count == 1
 
@@ -180,7 +180,7 @@ class TestSaveSession:
         self.presenter.state_stack = self.mocker.MagicMock()
         self.presenter.position = 0
         self.presenter.running_sessions = self.labels
-        self.view.get_confirmation.return_value = ord("Y")
+        self.view.get_confirmation.return_value = True
 
     def test_shows_error_if_position_is_negative(self):
         self.presenter.position = -1
@@ -201,12 +201,12 @@ class TestSaveSession:
         self.view.get_confirmation.assert_called_once()
 
     def test_does_not_save_session_if_confirmation_is_no(self):
-        self.view.get_confirmation.return_value = ord("n")
+        self.view.get_confirmation.return_value = False
         self.presenter.save_session()
         self.model.save_session.assert_not_called()
 
     def test_saves_session_if_confirmation_is_yes(self):
-        self.view.get_confirmation.return_value = ord("Y")
+        self.view.get_confirmation.return_value = True
         self.presenter.save_session()
         self.model.save_session.assert_called_once_with(self.labels[0])
 
@@ -222,7 +222,7 @@ class TestLoadSession:
         self.presenter.state_stack = self.mocker.MagicMock()
         self.presenter.position = 0
         self.presenter.saved_sessions = self.labels
-        self.presenter.state_stack.get.return_value = State.SAVED_SESSIONS
+        self.presenter.state_stack.get.return_value = CursesStates.SAVED_SESSIONS
 
     def test_valid_position_loads_session(self):
         self.presenter.load_session()
@@ -245,7 +245,7 @@ class TestKillSession:
         self.presenter.state_stack = self.mocker.MagicMock()
         self.presenter.position = 0
         self.presenter.running_sessions = self.labels
-        self.view.get_confirmation.return_value = ord("Y")
+        self.view.get_confirmation.return_value = True
 
     def test_negative_position_shows_error(self):
         self.presenter.position = -1
@@ -267,7 +267,7 @@ class TestKillSession:
         self.model.kill_session.assert_called_once_with(self.labels[0])
 
     def test_confirmation_no_does_not_kill_session(self):
-        self.view.get_confirmation.return_value = ord("n")
+        self.view.get_confirmation.return_value = False
         self.presenter.kill_session()
         self.model.kill_session.assert_not_called()
 
@@ -283,7 +283,7 @@ class TestDeleteSession:
         self.presenter.state_stack = self.mocker.MagicMock()
         self.presenter.position = 0
         self.presenter.saved_sessions = self.labels
-        self.view.get_confirmation.return_value = ord("Y")
+        self.view.get_confirmation.return_value = True
 
     def test_negative_position_shows_error(self):
         self.presenter.position = -1
@@ -305,7 +305,7 @@ class TestDeleteSession:
         self.model.delete_session.assert_called_once_with(self.labels[0])
 
     def test_confirmation_no_does_not_delete_session(self):
-        self.view.get_confirmation.return_value = ord("n")
+        self.view.get_confirmation.return_value = False
         self.presenter.delete_session()
         self.model.delete_session.assert_not_called()
 
@@ -321,9 +321,9 @@ class TestRenameSession:
         self.presenter.state_stack = self.mocker.MagicMock()
         self.presenter.position = 0
         self.presenter.saved_sessions = self.labels
-        self.presenter.state_stack.get.return_value = State.SAVED_SESSIONS
+        self.presenter.state_stack.get.return_value = CursesStates.SAVED_SESSIONS
         self.view.rename_session.return_value = "new name"
-        self.view.get_confirmation.return_value = ord("Y")
+        self.view.get_confirmation.return_value = True
 
     def test_negative_position_shows_error(self):
         self.presenter.position = -1
@@ -350,6 +350,6 @@ class TestRenameSession:
         self.model.rename_session.assert_not_called()
 
     def test_confirmation_no_does_not_rename_session(self):
-        self.view.get_confirmation.return_value = ord("n")
+        self.view.get_confirmation.return_value = False
         self.presenter.rename_session()
         self.model.rename_session.assert_not_called()
