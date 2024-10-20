@@ -48,6 +48,8 @@ class JmuxModel(Model):
         """
         if label not in self.multiplexer.list_sessions():
             raise ValueError("Session does not exist")
+        if label == self.multiplexer.get_current_session_label():
+            raise ValueError("Cannot kill the active session")
         self.multiplexer.kill_session(label)
 
     def delete_session(self, label: SessionLabel) -> None:

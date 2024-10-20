@@ -359,15 +359,6 @@ class TestKillSession:
         call_count = self.subprocess.mock_calls.count(expected_call)
         assert call_count == 1
 
-    def test_raises_ValueError_if_session_is_currently_active(self):
-        self.mocker.patch.object(
-            TmuxClient,
-            "get_current_session_label",
-            return_value=self.labels[0],
-        )
-        with pytest.raises(ValueError):
-            self.multiplexer.kill_session(self.labels[0])
-
 
 class TestRenameSession:
     @pytest.fixture(autouse=True)
