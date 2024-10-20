@@ -92,25 +92,18 @@ class CursesPresenter(Presenter):
         """
         match command:
             case Commands.EXIT:
-                self.view.show_error("Exiting...")
                 self.stop()
             case Commands.MOVE_UP:
-                self.view.show_error("Moving up")
                 self._move_cursor_up()
             case Commands.MOVE_DOWN:
-                self.view.show_error("Moving down")
                 self._move_cursor_down()
             case Commands.CREATE_SESSION:
-                self.view.show_error("Creating session")
                 self.create_session()
             case Commands.LOAD_SESSION:
-                self.view.show_error("Loading session")
                 self.load_session()
             case Commands.RENAME_SESSION:
-                self.view.show_error("Renaming session")
                 self.rename_session()
             case Commands.DELETE_SESSION:
-                self.view.show_error("Deleting session")
                 state = self.state_stack.get()
                 if state == CursesStates.RUNNING_SESSIONS:
                     self.kill_session()
