@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class Curses_States(Enum):
+class CursesStates(Enum):
     RUNNING_SESSIONS = 0
     SAVED_SESSIONS = 1
     CREATE_SESSION = 2
