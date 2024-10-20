@@ -44,7 +44,7 @@ class JmuxPresenter(Presenter):
             raise TypeError("model must be an instance of Model")
         self.view = view
         self.model = model
-        self.position = 0
+        self.position = -1
         self.state_stack: LifoQueue = LifoQueue()
         self._update_sessions()
 
@@ -76,7 +76,7 @@ class JmuxPresenter(Presenter):
             self._annotate_running_session(index, session)
             for index, session in enumerate(self.running_sessions)
         ]
-        self.view.show_running_sessions(session_names)
+        self.view.show_menu(session_names)
 
     def _annotate_running_session(self, index: int, session: SessionLabel) -> str:
         name = f"{index + 1}. {session.name}"
@@ -96,7 +96,7 @@ class JmuxPresenter(Presenter):
             self._annotate_saved_session(index, session)
             for index, session in enumerate(self.saved_sessions)
         ]
-        self.view.show_saved_sessions(session_names)
+        self.view.show_menu(session_names)
 
     def _annotate_saved_session(self, index: int, session: SessionLabel) -> str:
         name = f"{index + 1}. {session.name}"
@@ -135,12 +135,12 @@ class JmuxPresenter(Presenter):
                 self.view.show_error(error_message)
 
     def _move_cursor_up(self) -> None:
-        if self.position > 1:
+        if self.position > 0:
             self.position -= 1
             self.view.cursor_up()
 
     def _move_cursor_down(self) -> None:
-        if self.position < len(self.saved_sessions):
+        if self.position < len(self.saved_sessions) - 1:
             self.position += 1
             self.view.cursor_down()
 
@@ -163,7 +163,7 @@ class JmuxPresenter(Presenter):
         if self._check_position(self.running_sessions) and self._get_confirmation(
             "Save session? (y/N)", "Session not saved"
         ):
-            self.model.save_session(self.running_sessions[self.position - 1])
+            self.model.save_session(self.running_sessions[self.position])
 
     def load_session(self) -> None:
         """
@@ -176,7 +176,7 @@ class JmuxPresenter(Presenter):
             else self.running_sessions
         )
         if self._check_position(session_list):
-            self.model.load_session(session_list[self.position - 1])
+            self.model.load_session(session_list[self.position])
         self._return_to_previous_state(previous_state)
 
     def kill_session(self) -> None:
@@ -186,7 +186,7 @@ class JmuxPresenter(Presenter):
         if self._check_position(self.running_sessions) and self._get_confirmation(
             "Kill session? (y/N)", "Session not killed"
         ):
-            self.model.kill_session(self.running_sessions[self.position - 1])
+            self.model.kill_session(self.running_sessions[self.position])
 
     def delete_session(self) -> None:
         """
@@ -195,7 +195,7 @@ class JmuxPresenter(Presenter):
         if self._check_position(self.saved_sessions) and self._get_confirmation(
             "Permanently delete session? (y/N)", "Session not deleted"
         ):
-            self.model.delete_session(self.saved_sessions[self.position - 1])
+            self.model.delete_session(self.saved_sessions[self.position])
 
     def rename_session(self) -> None:
         """
@@ -209,7 +209,7 @@ class JmuxPresenter(Presenter):
         )
         if self._check_position(session_list):
             self.state_stack.put(State.RENAME_SESSION)
-            new_name = self.view.rename_session(session_list[self.position - 1].name)
+            new_name = self.view.rename_session(session_list[self.position].name)
             self.state_stack.get()
             if (
                 new_name
@@ -218,7 +218,7 @@ class JmuxPresenter(Presenter):
                     "Rename session? (y/N)", "Session not renamed"
                 )
             ):
-                self.model.rename_session(session_list[self.position - 1], new_name)
+                self.model.rename_session(session_list[self.position], new_name)
         self._return_to_previous_state(previous_state)
 
     def _return_to_previous_state(self, return_state: State) -> None:
@@ -237,7 +237,7 @@ class JmuxPresenter(Presenter):
                 self.running_sessions_menu()
 
     def _check_position(self, session_list: list[SessionLabel]) -> bool:
-        if self.position < 1 or self.position > len(session_list):
+        if self.position < 0 or self.position > len(session_list) - 1:
             self.view.show_error("Invalid session")
             return False
         return True
