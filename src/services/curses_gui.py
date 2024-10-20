@@ -1,5 +1,5 @@
 import curses
-from typing import Callable, Concatenate, List, ParamSpec, Tuple, TypeVar
+from typing import Callable, Concatenate, Dict, List, ParamSpec, Tuple, TypeVar
 
 from src.interfaces import Model, Presenter, View
 from src.models import Commands
@@ -18,7 +18,7 @@ class CursesGui(View):
         self.running: bool = False
         self.commands = self._init_commands()
 
-    def _init_commands(self) -> dict[int, Commands]:
+    def _init_commands(self) -> Dict[int, Commands]:
         command_to_keys = {
             Commands.MOVE_DOWN: [curses.KEY_DOWN, ord("j")],
             Commands.MOVE_UP: [curses.KEY_UP, ord("k")],
