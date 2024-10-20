@@ -1,6 +1,8 @@
 import abc
 from typing import List
 
+from src.models import Commands
+
 
 class View(abc.ABC):
     @abc.abstractmethod
@@ -21,6 +23,13 @@ class View(abc.ABC):
     def stop(self):
         """
         Stop the view.
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_input(self) -> Commands:
+        """
+        Get user input.
         """
         raise NotImplementedError
 
