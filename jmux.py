@@ -14,7 +14,7 @@ def main():
     sessions_dir = pathlib.Path.home() / ".jmux"
     manager = create_manager(sessions_dir)
     view = CursesGui(manager)
-    view.presenter.run()
+    view.start()
 
 
 if __name__ == "__main__":

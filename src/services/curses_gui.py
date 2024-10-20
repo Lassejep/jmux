@@ -1,5 +1,5 @@
 import curses
-from typing import Callable, Concatenate, List, ParamSpec, TypeVar
+from typing import Callable, Concatenate, List, ParamSpec, Tuple, TypeVar
 
 from src.interfaces import Model, Presenter, View
 from src.models import Commands
@@ -16,6 +16,24 @@ class CursesGui(View):
         """
         self.presenter: Presenter = CursesPresenter(self, model)
         self.running: bool = False
+        self.commands = self._init_commands()
+
+    def _init_commands(self) -> dict[int, Commands]:
+        command_to_keys = {
+            Commands.MOVE_DOWN: [curses.KEY_DOWN, ord("j")],
+            Commands.MOVE_UP: [curses.KEY_UP, ord("k")],
+            Commands.EXIT: [ord("q"), 27],
+            Commands.CREATE_SESSION: [ord("o")],
+            Commands.SAVE_SESSION: [ord("s")],
+            Commands.RENAME_SESSION: [ord("r")],
+            Commands.DELETE_SESSION: [ord("d")],
+            Commands.LOAD_SESSION: [curses.KEY_ENTER, 10],
+        }
+        key_to_command = {}
+        for command, keys in command_to_keys.items():
+            for key in keys:
+                key_to_command[key] = command
+        return key_to_command
 
     @staticmethod
     def _static_cursor(
@@ -45,7 +63,7 @@ class CursesGui(View):
         curses.set_escdelay(50)
         self._init_colors()
         self._init_screen(stdscr)
-        self.presenter.running_sessions_menu()
+        self.presenter.run()
 
     def _init_colors(self) -> None:
         curses.start_color()
@@ -55,9 +73,10 @@ class CursesGui(View):
 
     def _init_screen(self, stdscr) -> None:
         size = stdscr.getmaxyx()
-        self.screen: curses.window = stdscr.subpad(0, 0)
+        self.screen_size: Tuple[int, int] = size
+        self.screen: curses.window = curses.newpad(size[0] - 1, size[1])
         self.screen.keypad(True)
-        self.msgbox = self.screen.subpad(1, size[1] - 1, size[0] - 1, 0)
+        self.msgbox = curses.newpad(1, size[1])
 
     def stop(self) -> None:
         """
@@ -70,27 +89,7 @@ class CursesGui(View):
         """
         Get user input.
         """
-        command = Commands.UNKNOWN
-        while self.running:
-            command = self._key_to_command(self.screen.getch())
-        return command
-
-    def _key_to_command(self, key: int) -> Commands:
-        command_to_keys = {
-            Commands.MOVE_DOWN: [curses.KEY_DOWN, ord("j")],
-            Commands.MOVE_UP: [curses.KEY_UP, ord("k")],
-            Commands.EXIT: [ord("q"), curses.KEY_EXIT, 27],
-            Commands.CREATE_SESSION: [ord("o")],
-            Commands.SAVE_SESSION: [ord("s")],
-            Commands.RENAME_SESSION: [ord("r")],
-            Commands.DELETE_SESSION: [ord("d")],
-        }
-        key_to_command = {}
-        for command, keys in command_to_keys.items():
-            for key in keys:
-                key_to_command[key] = command
-
-        return key_to_command.get(key, Commands.UNKNOWN)
+        return self.commands.get(self.screen.getch(), Commands.UNKNOWN)
 
     def show_menu(self, sessions: List[str]) -> None:
         """
@@ -102,7 +101,8 @@ class CursesGui(View):
             self.screen.addstr((index + 1), 0, session)
         self.screen.move(self.presenter.position + 1, 0)
         self.screen.chgat(self.presenter.position + 1, 0, -1, curses.A_REVERSE)
-        self.screen.refresh()
+        size = self.screen.getmaxyx()
+        self.screen.refresh(0, 0, 0, 0, size[0] - 1, size[1])
 
     @_static_cursor
     def show_error(self, message: str) -> None:
@@ -111,13 +111,20 @@ class CursesGui(View):
         """
         self.msgbox.clear()
         self.msgbox.addstr(message, self.error_color)
-        self.msgbox.refresh()
+        self.msgbox.refresh(
+            0,
+            0,
+            self.screen_size[0] - 1,
+            0,
+            self.screen_size[0],
+            self.screen_size[1],
+        )
 
     def cursor_down(self) -> None:
         """
         Move the cursor down.
         """
-        cursor_y, cursor_x = curses.getsyx()
+        cursor_y, cursor_x = self.screen.getyx()
         new_y = cursor_y + 1
         self.screen.move(new_y, cursor_x)
         self._move_highlight(cursor_y, new_y)
@@ -126,7 +133,7 @@ class CursesGui(View):
         """
         Move the cursor up.
         """
-        cursor_y, cursor_x = curses.getsyx()
+        cursor_y, cursor_x = self.screen.getyx()
         new_y = cursor_y - 1
         self.screen.move(new_y, cursor_x)
         self._move_highlight(cursor_y, new_y)
@@ -142,7 +149,14 @@ class CursesGui(View):
         """
         self.msgbox.clear()
         self.msgbox.addstr(message)
-        self.msgbox.refresh()
+        self.msgbox.refresh(
+            0,
+            0,
+            self.screen_size[0] - 1,
+            0,
+            self.screen_size[0],
+            self.screen_size[1],
+        )
         return self.msgbox.getch() in [ord("y"), ord("Y")]
 
     @_static_cursor
@@ -152,9 +166,18 @@ class CursesGui(View):
         """
         self.msgbox.clear()
         self.msgbox.addstr("Enter a name for the new session: ")
-        self.msgbox.refresh()
+        self.msgbox.refresh(
+            0,
+            0,
+            self.screen_size[0] - 1,
+            0,
+            self.screen_size[0],
+            self.screen_size[1],
+        )
         curses.echo()
+        curses.curs_set(1)
         name = self.msgbox.getstr().decode("utf-8")
+        curses.curs_set(0)
         curses.noecho()
         return name
 
@@ -165,8 +188,17 @@ class CursesGui(View):
         """
         self.msgbox.clear()
         self.msgbox.addstr("Enter a new name for the session: ")
-        self.msgbox.refresh()
+        self.msgbox.refresh(
+            0,
+            0,
+            self.screen_size[0] - 1,
+            0,
+            self.screen_size[0],
+            self.screen_size[1],
+        )
         curses.echo()
+        curses.curs_set(1)
         name = self.msgbox.getstr().decode("utf-8")
+        curses.curs_set(0)
         curses.noecho()
         return name
