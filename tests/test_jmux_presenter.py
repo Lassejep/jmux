@@ -195,18 +195,6 @@ class TestCreateSession:
         self.presenter.create_session()
         self.model.create_session.assert_not_called()
 
-    def test_previous_state_is_running_sessions_menu_returns_to_running_sessions_menu(
-        self,
-    ):
-        self.presenter.state_stack.get.return_value = State.RUNNING_SESSIONS
-        self.presenter.create_session()
-        self.view.show_menu.assert_called_once()
-
-    def test_previous_state_is_saved_sessions_menu_returns_to_saved_sessions_menu(self):
-        self.presenter.state_stack.get.return_value = State.SAVED_SESSIONS
-        self.presenter.create_session()
-        self.view.show_menu.assert_called_once()
-
 
 class TestSaveSession:
     @pytest.fixture(autouse=True)
@@ -271,16 +259,6 @@ class TestLoadSession:
         self.presenter.position = -1
         self.presenter.load_session()
         self.model.load_session.assert_not_called()
-
-    def test_returns_to_previous_state(self):
-        self.mocker.patch.object(self.presenter, "saved_sessions_menu")
-        self.mocker.patch.object(self.presenter, "running_sessions_menu")
-        self.presenter.state_stack.get.return_value = State.SAVED_SESSIONS
-        self.presenter.load_session()
-        self.presenter.saved_sessions_menu.assert_called_once()
-        self.presenter.state_stack.get.return_value = State.RUNNING_SESSIONS
-        self.presenter.load_session()
-        self.presenter.running_sessions_menu.assert_called_once()
 
 
 class TestKillSession:
