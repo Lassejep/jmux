@@ -30,6 +30,7 @@ class State(Enum):
     SAVED_SESSIONS_MENU = 1
     CREATE_SESSION = 2
     CONFIRMATION = 3
+    RENAME_SESSION = 4
 
 
 class JmuxPresenter(Presenter):
@@ -116,10 +117,19 @@ class JmuxPresenter(Presenter):
                 self._move_cursor_up()
             case InputKeys.LOWER_J.value | InputKeys.DOWN.value:
                 self._move_cursor_down()
+            case InputKeys.LOWER_A.value:
+                self.create_session()
             case InputKeys.ENTER.value:
                 self.load_session()
             case InputKeys.LOWER_D.value:
-                self.delete_session()
+                state = self.state_stack.get()
+                if state == State.RUNNING_SESSIONS_MENU:
+                    self.kill_session()
+                elif state == State.SAVED_SESSIONS_MENU:
+                    self.delete_session()
+                self.state_stack.put(state)
+            case InputKeys.LOWER_R.value:
+                self.rename_session()
             case _:
                 error_message = f"Invalid key code: {key}"
                 self.view.show_error(error_message)
@@ -191,7 +201,25 @@ class JmuxPresenter(Presenter):
         """
         Rename the selected session.
         """
-        pass
+        previous_state = self.state_stack.get()
+        session_list = (
+            self.saved_sessions
+            if previous_state == State.SAVED_SESSIONS_MENU
+            else self.running_sessions
+        )
+        if self._check_position(session_list):
+            self.state_stack.put(State.RENAME_SESSION)
+            new_name = self.view.rename_session(session_list[self.position - 1].name)
+            self.state_stack.get()
+            if (
+                new_name
+                and not new_name.isspace()
+                and self._get_confirmation(
+                    "Rename session? (y/N)", "Session not renamed"
+                )
+            ):
+                self.model.rename_session(session_list[self.position - 1], new_name)
+        self._return_to_previous_state(previous_state)
 
     def _return_to_previous_state(self, return_state: State) -> None:
         match return_state:
