@@ -47,8 +47,8 @@ class TestRunningSessionsMenu:
     def setup(self, mocker, mock_view, mock_model, session_labels):
         self.model = mock_model
         self.view = mock_view
-        self.presenter = JmuxPresenter(self.view, self.model)
         self.labels = session_labels
+        self.presenter = JmuxPresenter(self.view, self.model)
 
     def test_updates_view_with_running_sessions(self):
         self.presenter.running_sessions_menu()
@@ -111,8 +111,8 @@ class TestSavedSessionsMenu:
     def setup(self, mocker, mock_view, mock_model, session_labels):
         self.model = mock_model
         self.view = mock_view
-        self.presenter = JmuxPresenter(self.view, self.model)
         self.labels = session_labels
+        self.presenter = JmuxPresenter(self.view, self.model)
 
     def test_updates_view_with_saved_sessions(self):
         self.presenter.saved_sessions_menu()
@@ -218,67 +218,26 @@ class TestSaveSession:
         self.presenter = JmuxPresenter(self.view, self.model)
         self.presenter.state_stack = self.mocker.MagicMock()
         self.presenter.position = 1
-        self.presenter.state_stack.get.return_value = State.RUNNING_SESSIONS_MENU
         self.presenter.running_sessions = self.labels
         self.view.get_confirmation.return_value = ord("Y")
-
-    def test_gets_previous_state_from_state_stack(self):
-        self.presenter.save_session()
-        assert self.presenter.state_stack.get.call_count >= 1
 
     def test_shows_error_if_position_is_zero(self):
         self.presenter.position = 0
         self.presenter.save_session()
         self.view.show_error.assert_called_once()
 
-    def test_state_is_running_sessions_shows_error_if_position_is_too_high(
-        self,
-    ):
-        self.presenter.running_sessions = self.labels
+    def test_shows_error_if_position_is_too_high(self):
         self.presenter.position = 3
-        self.presenter.save_session()
-        self.view.show_error.assert_called_once()
-
-    def test_state_is_saved_sessions_shows_error_if_position_is_too_high(self):
-        self.presenter.saved_sessions = self.labels
-        self.presenter.position = 3
-        self.presenter.state_stack.get.return_value = State.SAVED_SESSIONS_MENU
         self.presenter.save_session()
         self.view.show_error.assert_called_once()
 
     def test_does_not_show_error_if_position_is_valid(self):
-        self.presenter.running_sessions = self.labels * 3
-        self.presenter.saved_sessions = self.labels
-        self.presenter.position = 4
         self.presenter.save_session()
         self.view.show_error.assert_not_called()
 
-    def test_invalid_position_returns_to_previous_state(self):
-        self.presenter.position = 0
-        self.presenter.save_session()
-        self.view.show_running_sessions.assert_called_once()
-
-    def test_invalid_position_returns_to_previous_state_saved_sessions(self):
-        self.presenter.position = 0
-        self.presenter.state_stack.get.return_value = State.SAVED_SESSIONS_MENU
-        self.presenter.save_session()
-        self.view.show_saved_sessions.assert_called_once()
-
-    def test_changes_state_to_save_session(self):
-        self.presenter.save_session()
-        expected_call = self.mocker.call(State.SAVE_SESSION)
-        count = self.presenter.state_stack.put.mock_calls.count(expected_call)
-        assert count == 1
-
     def test_gets_confirmation_from_view(self):
         self.presenter.save_session()
-        self.view.get_confirmation.assert_called_once_with(
-            f"Save session {self.labels[0].name}? (Y/n)"
-        )
-
-    def test_pops_state_stack_after_getting_confirmation(self):
-        self.presenter.save_session()
-        assert self.presenter.state_stack.get.call_count >= 2
+        self.view.get_confirmation.assert_called_once()
 
     def test_does_not_save_session_if_confirmation_is_no(self):
         self.view.get_confirmation.return_value = ord("n")
@@ -289,10 +248,6 @@ class TestSaveSession:
         self.view.get_confirmation.return_value = ord("Y")
         self.presenter.save_session()
         self.model.save_session.assert_called_once_with(self.labels[0])
-
-    def test_returns_to_previous_state_after_confirmation(self):
-        self.presenter.save_session()
-        self.view.show_running_sessions.assert_called_once()
 
 
 class TestLoadSession:
@@ -325,3 +280,41 @@ class TestLoadSession:
         self.presenter.state_stack.get.return_value = State.RUNNING_SESSIONS_MENU
         self.presenter.load_session()
         self.view.show_running_sessions.assert_called_once()
+
+
+class TestKillSession:
+    @pytest.fixture(autouse=True)
+    def setup(self, mocker, mock_view, mock_model, session_labels):
+        self.model = mock_model
+        self.view = mock_view
+        self.mocker = mocker
+        self.labels = session_labels
+        self.presenter = JmuxPresenter(self.view, self.model)
+        self.presenter.state_stack = self.mocker.MagicMock()
+        self.presenter.position = 1
+        self.presenter.running_sessions = self.labels
+        self.view.get_confirmation.return_value = ord("Y")
+
+    def test_position_zero_shows_error(self):
+        self.presenter.position = 0
+        self.presenter.kill_session()
+        self.view.show_error.assert_called_once()
+
+    def test_position_too_high_shows_error(self):
+        self.presenter.position = 3
+        self.presenter.kill_session()
+        self.view.show_error.assert_called_once()
+
+    def test_invalid_position_does_not_kill_session(self):
+        self.presenter.position = 0
+        self.presenter.kill_session()
+        self.model.kill_session.assert_not_called()
+
+    def test_valid_position_kills_session(self):
+        self.presenter.kill_session()
+        self.model.kill_session.assert_called_once_with(self.labels[0])
+
+    def test_confirmation_no_does_not_kill_session(self):
+        self.view.get_confirmation.return_value = ord("n")
+        self.presenter.kill_session()
+        self.model.kill_session.assert_not_called()
