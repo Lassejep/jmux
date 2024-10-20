@@ -172,8 +172,6 @@ class TmuxClient(Multiplexer):
         """
         if label not in self.list_sessions():
             raise ValueError(f"Session {label.name} not found")
-        if label == self.get_current_session_label():
-            raise ValueError("Cannot kill the current session")
         command = [self._bin, "kill-session", "-t", label.id]
         subprocess.run(command, check=True)
 
