@@ -2,7 +2,7 @@ import curses
 from typing import Callable, Concatenate, List, ParamSpec, TypeVar
 
 from src.interfaces import Model, Presenter, View
-from src.services.jmux_presenter import JmuxPresenter
+from src.services.curses_presenter import CursesPresenter
 
 Params = ParamSpec("Params")
 ReturnType = TypeVar("ReturnType")
@@ -13,7 +13,7 @@ class CursesGui(View):
         """
         A Curses GUI that implements the View interface.
         """
-        self.presenter: Presenter = JmuxPresenter(self, model)
+        self.presenter: Presenter = CursesPresenter(self, model)
 
     @staticmethod
     def _static_cursor(

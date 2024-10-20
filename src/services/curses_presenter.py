@@ -33,7 +33,7 @@ class State(Enum):
     RENAME_SESSION = 4
 
 
-class JmuxPresenter(Presenter):
+class CursesPresenter(Presenter):
     def __init__(self, view: View, model: Model):
         """
         Presenter for the GUI.

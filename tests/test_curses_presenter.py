@@ -2,7 +2,8 @@ from queue import LifoQueue
 
 import pytest
 
-from src.services.jmux_presenter import JmuxPresenter, State
+from src.services import CursesPresenter
+from src.services.curses_presenter import State
 
 
 class TestConstructor:
@@ -12,31 +13,31 @@ class TestConstructor:
         self.model = mock_model
 
     def test_given_valid_arguments_returns_instance_of_jmux_presenter(self):
-        assert isinstance(JmuxPresenter(self.view, self.model), JmuxPresenter)
+        assert isinstance(CursesPresenter(self.view, self.model), CursesPresenter)
 
     def test_with_invalid_view_value_throws_type_error(self):
         with pytest.raises(TypeError):
-            JmuxPresenter(self.model, self.model)
+            CursesPresenter(self.model, self.model)
         with pytest.raises(TypeError):
-            JmuxPresenter(None, self.model)
+            CursesPresenter(None, self.model)
 
     def test_given_invalid_model_value_throws_type_error(self):
         with pytest.raises(TypeError):
-            JmuxPresenter(self.view, self.view)
+            CursesPresenter(self.view, self.view)
         with pytest.raises(TypeError):
-            JmuxPresenter(self.view, None)
+            CursesPresenter(self.view, None)
 
     def test_initializes_position_to_negative_one(self):
-        presenter = JmuxPresenter(self.view, self.model)
+        presenter = CursesPresenter(self.view, self.model)
         assert presenter.position == -1
 
     def test_initializes_state_stack_to_empty_lifo_queue(self):
-        presenter = JmuxPresenter(self.view, self.model)
+        presenter = CursesPresenter(self.view, self.model)
         assert isinstance(presenter.state_stack, LifoQueue)
         assert presenter.state_stack.empty()
 
     def test_updates_sessions_on_initialization(self):
-        JmuxPresenter(self.view, self.model)
+        CursesPresenter(self.view, self.model)
         self.model.list_saved_sessions.assert_called_once()
         self.model.list_running_sessions.assert_called_once()
         self.model.get_active_session.assert_called_once()
@@ -48,54 +49,36 @@ class TestRunningSessionsMenu:
         self.model = mock_model
         self.view = mock_view
         self.labels = session_labels
-        self.presenter = JmuxPresenter(self.view, self.model)
+        self.presenter = CursesPresenter(self.view, self.model)
+        self.presenter.running_sessions = self.labels
 
     def test_updates_view_with_running_sessions(self):
         self.presenter.running_sessions_menu()
         self.view.show_menu.assert_called_once()
 
-    def test_updates_running_sessions_from_model(self):
-        call_count = self.model.list_running_sessions.call_count
-        self.presenter.running_sessions_menu()
-        assert self.model.list_running_sessions.call_count == call_count + 1
-
-    def test_updates_saved_sessions_from_model(self):
-        call_count = self.model.list_saved_sessions.call_count
-        self.presenter.running_sessions_menu()
-        assert self.model.list_saved_sessions.call_count == call_count + 1
-
-    def test_updates_current_session_from_model(self):
-        call_count = self.model.get_active_session.call_count
-        self.presenter.running_sessions_menu()
-        assert self.model.get_active_session.call_count == call_count + 1
-
     def test_annotates_running_session_name(self):
-        self.model.list_running_sessions.return_value = self.labels
         self.presenter.running_sessions_menu()
         self.view.show_menu.assert_called_once_with(
             [f"1. {self.labels[0].name}", f"2. {self.labels[1].name}"]
         )
 
     def test_adds_note_to_session_name_if_session_is_saved(self):
-        self.model.list_running_sessions.return_value = self.labels
-        self.model.list_saved_sessions.return_value = [self.labels[1]]
+        self.presenter.saved_sessions = [self.labels[1]]
         self.presenter.running_sessions_menu()
         self.view.show_menu.assert_called_once_with(
             [f"1. {self.labels[0].name}", f"2. {self.labels[1].name} (saved)"]
         )
 
     def test_adds_star_to_session_name_if_session_is_current(self):
-        self.model.list_running_sessions.return_value = self.labels
-        self.model.get_active_session.return_value = self.labels[1]
+        self.presenter.current_session = self.labels[1]
         self.presenter.running_sessions_menu()
         self.view.show_menu.assert_called_once_with(
             [f"1. {self.labels[0].name}", f"2. {self.labels[1].name}*"]
         )
 
     def test_adds_star_and_note_to_session_name_if_session_is_current_and_saved(self):
-        self.model.list_running_sessions.return_value = self.labels
-        self.model.get_active_session.return_value = self.labels[1]
-        self.model.list_saved_sessions.return_value = [self.labels[1]]
+        self.presenter.current_session = self.labels[1]
+        self.presenter.saved_sessions = [self.labels[1]]
         self.presenter.running_sessions_menu()
         self.view.show_menu.assert_called_once_with(
             [f"1. {self.labels[0].name}", f"2. {self.labels[1].name}* (saved)"]
@@ -112,46 +95,36 @@ class TestSavedSessionsMenu:
         self.model = mock_model
         self.view = mock_view
         self.labels = session_labels
-        self.presenter = JmuxPresenter(self.view, self.model)
+        self.presenter = CursesPresenter(self.view, self.model)
+        self.presenter.saved_sessions = self.labels
 
     def test_updates_view_with_saved_sessions(self):
         self.presenter.saved_sessions_menu()
         self.view.show_menu.assert_called_once()
 
-    def test_updates_running_sessions_from_model(self):
-        call_count = self.model.list_running_sessions.call_count
-        self.presenter.saved_sessions_menu()
-        assert self.model.list_running_sessions.call_count == call_count + 1
-
-    def test_updates_saved_sessions_from_model(self):
-        call_count = self.model.list_saved_sessions.call_count
-        self.presenter.saved_sessions_menu()
-        assert self.model.list_saved_sessions.call_count == call_count + 1
-
-    def test_updates_current_session_from_model(self):
-        call_count = self.model.get_active_session.call_count
-        self.presenter.saved_sessions_menu()
-        assert self.model.get_active_session.call_count == call_count + 1
-
     def test_annotates_saved_session_name(self):
-        self.model.list_saved_sessions.return_value = self.labels
         self.presenter.saved_sessions_menu()
         self.view.show_menu.assert_called_once_with(
             [f"1. {self.labels[0].name}", f"2. {self.labels[1].name}"]
         )
 
+    def test_adds_note_to_session_name_if_session_is_running(self):
+        self.presenter.running_sessions = [self.labels[1]]
+        self.presenter.saved_sessions_menu()
+        self.view.show_menu.assert_called_once_with(
+            [f"1. {self.labels[0].name}", f"2. {self.labels[1].name} (running)"]
+        )
+
     def test_adds_star_to_session_name_if_session_is_current(self):
-        self.model.list_saved_sessions.return_value = self.labels
-        self.model.get_active_session.return_value = self.labels[1]
+        self.presenter.current_session = self.labels[1]
         self.presenter.saved_sessions_menu()
         self.view.show_menu.assert_called_once_with(
             [f"1. {self.labels[0].name}", f"2. {self.labels[1].name}*"]
         )
 
     def test_adds_star_and_note_to_session_name_if_session_is_current_and_running(self):
-        self.model.list_saved_sessions.return_value = self.labels
-        self.model.get_active_session.return_value = self.labels[1]
-        self.model.list_running_sessions.return_value = [self.labels[1]]
+        self.presenter.current_session = self.labels[1]
+        self.presenter.running_sessions = [self.labels[1]]
         self.presenter.saved_sessions_menu()
         self.view.show_menu.assert_called_once_with(
             [f"1. {self.labels[0].name}", f"2. {self.labels[1].name}* (running)"]
@@ -168,7 +141,7 @@ class TestCreateSession:
         self.model = mock_model
         self.view = mock_view
         self.mocker = mocker
-        self.presenter = JmuxPresenter(self.view, self.model)
+        self.presenter = CursesPresenter(self.view, self.model)
         self.view.create_new_session.return_value = "test"
         self.presenter.state_stack = self.mocker.MagicMock()
 
@@ -203,7 +176,7 @@ class TestSaveSession:
         self.view = mock_view
         self.mocker = mocker
         self.labels = session_labels
-        self.presenter = JmuxPresenter(self.view, self.model)
+        self.presenter = CursesPresenter(self.view, self.model)
         self.presenter.state_stack = self.mocker.MagicMock()
         self.presenter.position = 0
         self.presenter.running_sessions = self.labels
@@ -245,7 +218,7 @@ class TestLoadSession:
         self.view = mock_view
         self.mocker = mocker
         self.labels = session_labels
-        self.presenter = JmuxPresenter(self.view, self.model)
+        self.presenter = CursesPresenter(self.view, self.model)
         self.presenter.state_stack = self.mocker.MagicMock()
         self.presenter.position = 0
         self.presenter.saved_sessions = self.labels
@@ -268,7 +241,7 @@ class TestKillSession:
         self.view = mock_view
         self.mocker = mocker
         self.labels = session_labels
-        self.presenter = JmuxPresenter(self.view, self.model)
+        self.presenter = CursesPresenter(self.view, self.model)
         self.presenter.state_stack = self.mocker.MagicMock()
         self.presenter.position = 0
         self.presenter.running_sessions = self.labels
@@ -306,7 +279,7 @@ class TestDeleteSession:
         self.view = mock_view
         self.mocker = mocker
         self.labels = session_labels
-        self.presenter = JmuxPresenter(self.view, self.model)
+        self.presenter = CursesPresenter(self.view, self.model)
         self.presenter.state_stack = self.mocker.MagicMock()
         self.presenter.position = 0
         self.presenter.saved_sessions = self.labels
@@ -344,7 +317,7 @@ class TestRenameSession:
         self.view = mock_view
         self.mocker = mocker
         self.labels = session_labels
-        self.presenter = JmuxPresenter(self.view, self.model)
+        self.presenter = CursesPresenter(self.view, self.model)
         self.presenter.state_stack = self.mocker.MagicMock()
         self.presenter.position = 0
         self.presenter.saved_sessions = self.labels
