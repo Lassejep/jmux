@@ -65,6 +65,8 @@ class JmuxModel(Model):
         Rename the session with `label` to `new_name` in the multiplexer
         and in the file system.
         """
+        if not new_name or new_name.isspace():
+            raise ValueError("Invalid session name")
         if label in self.file_handler.list_sessions():
             session = self.file_handler.load_session(label.name)
             session.name = new_name
