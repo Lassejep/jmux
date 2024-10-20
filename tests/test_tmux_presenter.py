@@ -220,6 +220,7 @@ class TestSaveSession:
         self.presenter.position = 1
         self.presenter.state_stack.get.return_value = State.RUNNING_SESSIONS_MENU
         self.presenter.running_sessions = self.labels
+        self.view.get_confirmation.return_value = ord("Y")
 
     def test_gets_previous_state_from_state_stack(self):
         self.presenter.save_session()
@@ -291,4 +292,36 @@ class TestSaveSession:
 
     def test_returns_to_previous_state_after_confirmation(self):
         self.presenter.save_session()
+        self.view.show_running_sessions.assert_called_once()
+
+
+class TestLoadSession:
+    @pytest.fixture(autouse=True)
+    def setup(self, mocker, mock_view, mock_model, session_labels):
+        self.model = mock_model
+        self.view = mock_view
+        self.mocker = mocker
+        self.labels = session_labels
+        self.presenter = JmuxPresenter(self.view, self.model)
+        self.presenter.state_stack = self.mocker.MagicMock()
+        self.presenter.position = 1
+        self.presenter.saved_sessions = self.labels
+        self.presenter.state_stack.get.return_value = State.SAVED_SESSIONS_MENU
+
+    def test_valid_position_loads_session(self):
+        self.presenter.load_session()
+        self.model.load_session.assert_called_once_with(self.labels[0])
+
+    def test_invalid_position_does_not_load_session(self):
+        self.presenter.position = 0
+        self.presenter.load_session()
+        self.model.load_session.assert_not_called()
+
+    def test_invalid_position_returns_to_previous_state(self):
+        self.presenter.position = 0
+        self.presenter.state_stack.get.return_value = State.SAVED_SESSIONS_MENU
+        self.presenter.load_session()
+        self.view.show_saved_sessions.assert_called_once()
+        self.presenter.state_stack.get.return_value = State.RUNNING_SESSIONS_MENU
+        self.presenter.load_session()
         self.view.show_running_sessions.assert_called_once()
