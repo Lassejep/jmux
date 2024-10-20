@@ -6,7 +6,7 @@ from src.models import JmuxSession, SessionLabel
 
 class Multiplexer(abc.ABC):
     @abc.abstractmethod
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Abstract class for a terminal multiplexer API.
         Responsible for communicating with the terminal multiplexer.
