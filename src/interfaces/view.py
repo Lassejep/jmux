@@ -6,21 +6,22 @@ from src.models import Commands
 
 class View(abc.ABC):
     @abc.abstractmethod
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Interface for views.
         """
+        self.running: bool
         raise NotImplementedError
 
     @abc.abstractmethod
-    def start(self):
+    def start(self) -> None:
         """
         Start the view.
         """
         raise NotImplementedError
 
     @abc.abstractmethod
-    def stop(self):
+    def stop(self) -> None:
         """
         Stop the view.
         """
@@ -34,7 +35,7 @@ class View(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def show_menu(self, sessions: List[str]):
+    def show_menu(self, sessions: List[str]) -> None:
         """
         Show a menu with `sessions`.
         """
@@ -48,21 +49,21 @@ class View(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def show_error(self, message: str):
+    def show_error(self, message: str) -> None:
         """
         Show an error message.
         """
         raise NotImplementedError
 
     @abc.abstractmethod
-    def cursor_down(self):
+    def cursor_down(self) -> None:
         """
         Move the cursor down.
         """
         raise NotImplementedError
 
     @abc.abstractmethod
-    def cursor_up(self):
+    def cursor_up(self) -> None:
         """
         Move the cursor up.
         """
