@@ -164,19 +164,33 @@ class JmuxPresenter(Presenter):
         self.state_stack.put(State.SAVE_SESSION)
         confirmation = self.view.get_confirmation(f"Save session {session.name}? (Y/n)")
         self.state_stack.get()
-        if confirmation in (
+        if confirmation not in (
             InputKeys.LOWER_Y.value,
             InputKeys.UPPER_Y.value,
             InputKeys.ENTER.value,
         ):
-            self.model.save_session(session)
+            self.view.show_error("Session not saved")
+            self._return_to_previous_state(previous_state)
+            return
+        self.model.save_session(session)
         self._return_to_previous_state(previous_state)
 
     def load_session(self) -> None:
         """
         Load the selected session.
         """
-        pass
+        previous_state = self.state_stack.get()
+        session_list = (
+            self.saved_sessions
+            if previous_state == State.SAVED_SESSIONS_MENU
+            else self.running_sessions
+        )
+        if self.position < 1 or self.position > len(session_list):
+            self.view.show_error("Invalid session")
+            self._return_to_previous_state(previous_state)
+            return
+        self.model.load_session(session_list[self.position - 1])
+        self._return_to_previous_state(previous_state)
 
     def kill_session(self) -> None:
         """
