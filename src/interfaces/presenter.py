@@ -1,14 +1,18 @@
 import abc
 
+from src.interfaces.model import Model
 from src.interfaces.view import View
 
 
 class Presenter(abc.ABC):
     @abc.abstractmethod
-    def __init__(self, view: View):
+    def __init__(self, view: View, model: Model):
         """
         Interface for presenters.
         """
+        self.view: View
+        self.model: Model
+        self.position: int
         raise NotImplementedError
 
     @abc.abstractmethod
