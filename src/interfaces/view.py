@@ -65,3 +65,9 @@ class View(abc.ABC):
         Move the cursor up.
         """
         raise NotImplementedError
+
+    def create_new_session(self) -> str:
+        """
+        Show a prompt to create a new session and return the name of the session.
+        """
+        raise NotImplementedError

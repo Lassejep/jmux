@@ -1,5 +1,6 @@
 import sys
 from enum import Enum
+from queue import LifoQueue
 
 from src.interfaces import Model, Presenter, View
 from src.models import SessionLabel
@@ -24,6 +25,12 @@ class InputKeys(Enum):
     UPPER_N = ord("N")
 
 
+class State(Enum):
+    RUNNING_SESSIONS_MENU = 0
+    SAVED_SESSIONS_MENU = 1
+    CREATE_SESSION = 2
+
+
 class JmuxPresenter(Presenter):
     def __init__(self, view: View, model: Model):
         """
@@ -36,6 +43,7 @@ class JmuxPresenter(Presenter):
         self.view = view
         self.model = model
         self.position = 0
+        self.state_stack: LifoQueue = LifoQueue()
         self._update_sessions()
 
     def run(self) -> None:
@@ -60,6 +68,7 @@ class JmuxPresenter(Presenter):
         """
         get all running sessions from the model and show them in a view menu.
         """
+        self.state_stack.put(State.RUNNING_SESSIONS_MENU)
         self._update_sessions()
         session_names = [
             self._annotate_running_session(index, session)
@@ -79,6 +88,7 @@ class JmuxPresenter(Presenter):
         """
         Get all saved sessions from the model and show them in a view menu.
         """
+        self.state_stack.put(State.SAVED_SESSIONS_MENU)
         self._update_sessions()
         session_names = [
             self._annotate_saved_session(index, session)
@@ -127,7 +137,16 @@ class JmuxPresenter(Presenter):
         """
         Create a new session.
         """
-        pass
+        self.state_stack.put(State.CREATE_SESSION)
+        session_name = self.view.create_new_session()
+        self.state_stack.get()
+        if session_name and not session_name.isspace():
+            self.model.create_session(session_name)
+        return_state = self.state_stack.get()
+        if return_state == State.RUNNING_SESSIONS_MENU:
+            self.running_sessions_menu()
+        elif return_state == State.SAVED_SESSIONS_MENU:
+            self.saved_sessions_menu()
 
     def save_session(self) -> None:
         """

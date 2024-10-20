@@ -1,6 +1,8 @@
+from queue import LifoQueue
+
 import pytest
 
-from src.services import JmuxPresenter
+from src.services.jmux_presenter import JmuxPresenter, State
 
 
 class TestConstructor:
@@ -27,6 +29,11 @@ class TestConstructor:
     def test_initializes_position_to_zero(self):
         presenter = JmuxPresenter(self.view, self.model)
         assert presenter.position == 0
+
+    def test_initializes_state_stack_to_empty_lifo_queue(self):
+        presenter = JmuxPresenter(self.view, self.model)
+        assert isinstance(presenter.state_stack, LifoQueue)
+        assert presenter.state_stack.empty()
 
     def test_updates_sessions_on_initialization(self):
         JmuxPresenter(self.view, self.model)
@@ -94,6 +101,10 @@ class TestRunningSessionsMenu:
             [f"1. {self.labels[0].name}", f"2. {self.labels[1].name}* (saved)"]
         )
 
+    def test_sets_state_stack_to_running_sessions_menu(self):
+        self.presenter.running_sessions_menu()
+        assert self.presenter.state_stack.get() == State.RUNNING_SESSIONS_MENU
+
 
 class TestSavedSessionsMenu:
     @pytest.fixture(autouse=True)
@@ -145,3 +156,53 @@ class TestSavedSessionsMenu:
         self.view.show_saved_sessions.assert_called_once_with(
             [f"1. {self.labels[0].name}", f"2. {self.labels[1].name}* (running)"]
         )
+
+    def test_sets_state_stack_to_saved_sessions_menu(self):
+        self.presenter.saved_sessions_menu()
+        assert self.presenter.state_stack.get() == State.SAVED_SESSIONS_MENU
+
+
+class TestCreateSession:
+    @pytest.fixture(autouse=True)
+    def setup(self, mocker, mock_view, mock_model):
+        self.model = mock_model
+        self.view = mock_view
+        self.mocker = mocker
+        self.presenter = JmuxPresenter(self.view, self.model)
+        self.view.create_new_session.return_value = "test"
+        self.presenter.state_stack = self.mocker.MagicMock()
+
+    def test_adds_create_session_to_state_stack(self):
+        self.presenter.create_session()
+        expected_call = self.mocker.call(State.CREATE_SESSION)
+        count = self.presenter.state_stack.put.mock_calls.count(expected_call)
+        assert count == 1
+
+    def test_gets_name_from_view(self):
+        self.presenter.create_session()
+        self.view.create_new_session.assert_called_once()
+
+    def test_pops_state_stack_after_getting_name_from_view(self):
+        self.presenter.create_session()
+        assert self.presenter.state_stack.get.call_count >= 1
+
+    def test_creates_session_with_name(self):
+        self.presenter.create_session()
+        self.model.create_session.assert_called_once_with("test")
+
+    def test_empty_name_does_not_call_model(self):
+        self.view.create_new_session.return_value = ""
+        self.presenter.create_session()
+        self.model.create_session.assert_not_called()
+
+    def test_previous_state_is_running_sessions_menu_returns_to_running_sessions_menu(
+        self,
+    ):
+        self.presenter.state_stack.get.return_value = State.RUNNING_SESSIONS_MENU
+        self.presenter.create_session()
+        self.view.show_running_sessions.assert_called_once()
+
+    def test_previous_state_is_saved_sessions_menu_returns_to_saved_sessions_menu(self):
+        self.presenter.state_stack.get.return_value = State.SAVED_SESSIONS_MENU
+        self.presenter.create_session()
+        self.view.show_saved_sessions.assert_called_once()
