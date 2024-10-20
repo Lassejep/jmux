@@ -26,7 +26,11 @@ class CursesPresenter(Presenter):
         """
         if len(self.running_sessions) >= 0:
             self.position = 0
-        self.view.start()
+        self.running_sessions_menu()
+        while self.view.running:
+            self.handle_input(self.view.get_input())
+            self._update_state()
+        self.stop()
 
     def stop(self) -> None:
         """
@@ -88,18 +92,25 @@ class CursesPresenter(Presenter):
         """
         match command:
             case Commands.EXIT:
+                self.view.show_error("Exiting...")
                 self.stop()
             case Commands.MOVE_UP:
+                self.view.show_error("Moving up")
                 self._move_cursor_up()
             case Commands.MOVE_DOWN:
+                self.view.show_error("Moving down")
                 self._move_cursor_down()
             case Commands.CREATE_SESSION:
+                self.view.show_error("Creating session")
                 self.create_session()
             case Commands.LOAD_SESSION:
+                self.view.show_error("Loading session")
                 self.load_session()
             case Commands.RENAME_SESSION:
+                self.view.show_error("Renaming session")
                 self.rename_session()
             case Commands.DELETE_SESSION:
+                self.view.show_error("Deleting session")
                 state = self.state_stack.get()
                 if state == CursesStates.RUNNING_SESSIONS:
                     self.kill_session()
@@ -107,9 +118,8 @@ class CursesPresenter(Presenter):
                     self.delete_session()
                 self.state_stack.put(state)
             case _:
-                error_message = f"Invalid command: {command.value}"
+                error_message = f"Invalid command: {command}"
                 self.view.show_error(error_message)
-        self._update_state()
 
     def _move_cursor_up(self) -> None:
         if self.position > 0:
