@@ -20,3 +20,12 @@ class TestConstructor:
             JmuxModel(self.multiplexer, self.multiplexer)
         with pytest.raises(ValueError):
             JmuxModel(self.multiplexer, None)
+
+    def test_valid_arguments_set_multiplexer_and_file_handler(self):
+        model = JmuxModel(self.multiplexer, self.file_handler)
+        assert model.multiplexer == self.multiplexer
+        assert model.file_handler == self.file_handler
+
+    def test_returns_instance_of_jmux_model(self):
+        model = JmuxModel(self.multiplexer, self.file_handler)
+        assert isinstance(model, JmuxModel)
