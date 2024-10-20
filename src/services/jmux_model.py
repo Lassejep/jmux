@@ -37,6 +37,7 @@ class JmuxModel(Model):
         """
         if label in self.multiplexer.list_sessions():
             self.multiplexer.focus_session(label)
+            return
         session = self.file_handler.load_session(label.name)
         self.multiplexer.create_session(session)
         self.file_handler.save_session(session)
