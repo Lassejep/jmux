@@ -73,7 +73,8 @@ class JmuxPresenter(Presenter):
         get all running sessions from the model and show them in a view menu.
         """
         self.state_stack.put(State.RUNNING_SESSIONS)
-        self._update_sessions()
+        if not self._check_position(self.running_sessions):
+            self.position = 0
         session_names = [
             self._annotate_running_session(index, session)
             for index, session in enumerate(self.running_sessions)
@@ -93,7 +94,8 @@ class JmuxPresenter(Presenter):
         Get all saved sessions from the model and show them in a view menu.
         """
         self.state_stack.put(State.SAVED_SESSIONS)
-        self._update_sessions()
+        if not self._check_position(self.saved_sessions):
+            self.position = 0
         session_names = [
             self._annotate_saved_session(index, session)
             for index, session in enumerate(self.saved_sessions)
@@ -135,7 +137,7 @@ class JmuxPresenter(Presenter):
             case _:
                 error_message = f"Invalid key code: {key}"
                 self.view.show_error(error_message)
-        self._return_to_previous_state(self.state_stack.get())
+        self._update_state()
 
     def _move_cursor_up(self) -> None:
         if self.position > 0:
@@ -217,20 +219,17 @@ class JmuxPresenter(Presenter):
             ):
                 self.model.rename_session(session_list[self.position], new_name)
 
-    def _return_to_previous_state(self, return_state: State) -> None:
-        match return_state:
+    def _update_state(self) -> None:
+        if self.state_stack.empty():
+            self.stop()
+        self._update_sessions()
+        match self.state_stack.get():
             case State.RUNNING_SESSIONS:
-                if not self._check_position(self.running_sessions):
-                    self.position = 0
                 self.running_sessions_menu()
             case State.SAVED_SESSIONS:
-                if not self._check_position(self.saved_sessions):
-                    self.position = 0
                 self.saved_sessions_menu()
             case _:
                 self.view.show_error("Could not return to previous state")
-                if not self._check_position(self.running_sessions):
-                    self.position = 0
                 self.running_sessions_menu()
 
     def _check_position(self, session_list: list[SessionLabel]) -> bool:
