@@ -114,6 +114,11 @@ class CursesPresenter(Presenter):
                 elif state == CursesStates.SAVED_SESSIONS:
                     self.delete_session()
                 self.state_stack.put(state)
+            case Commands.SAVE_SESSION:
+                state = self.state_stack.get()
+                if state == CursesStates.RUNNING_SESSIONS:
+                    self.save_session()
+                self.state_stack.put(state)
             case _:
                 error_message = f"Invalid command: {command}"
                 self.view.show_error(error_message)
@@ -143,7 +148,7 @@ class CursesPresenter(Presenter):
         Save the selected session.
         """
         if self._check_position(self.running_sessions) and self._get_confirmation(
-            "Save session? (y/N)", "Session not saved"
+            "Save session (overwrites saves with same name)? (y/N)", "Session not saved"
         ):
             self.model.save_session(self.running_sessions[self.position])
 
