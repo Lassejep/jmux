@@ -49,7 +49,7 @@ class CursesPresenter(Presenter):
         get all running sessions from the model and show them in a view menu.
         """
         self.state_stack.put(CursesStates.RUNNING_SESSIONS)
-        if not self._check_position(self.running_sessions):
+        if not self._check_position(self.running_sessions, error_message=""):
             self.position = 0
         session_names = [
             self._annotate_running_session(index, session)
@@ -70,7 +70,7 @@ class CursesPresenter(Presenter):
         Get all saved sessions from the model and show them in a view menu.
         """
         self.state_stack.put(CursesStates.SAVED_SESSIONS)
-        if not self._check_position(self.saved_sessions):
+        if not self._check_position(self.saved_sessions, error_message=""):
             self.position = 0
         session_names = [
             self._annotate_saved_session(index, session)
@@ -97,6 +97,10 @@ class CursesPresenter(Presenter):
                 self._move_cursor_up()
             case Commands.MOVE_DOWN:
                 self._move_cursor_down()
+            case Commands.MOVE_LEFT:
+                self.state_stack.put(CursesStates.RUNNING_SESSIONS)
+            case Commands.MOVE_RIGHT:
+                self.state_stack.put(CursesStates.SAVED_SESSIONS)
             case Commands.CREATE_SESSION:
                 self.create_session()
             case Commands.LOAD_SESSION:
@@ -207,9 +211,12 @@ class CursesPresenter(Presenter):
                 self.view.show_error("Could not return to previous state")
                 self.running_sessions_menu()
 
-    def _check_position(self, session_list: list[SessionLabel]) -> bool:
+    def _check_position(
+        self, session_list: list[SessionLabel], error_message: str = "Invalid session"
+    ) -> bool:
         if self.position < 0 or self.position > len(session_list) - 1:
-            self.view.show_error("Invalid session")
+            if error_message:
+                self.view.show_error("Invalid session")
             return False
         return True
 
