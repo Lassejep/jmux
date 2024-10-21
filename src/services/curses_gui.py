@@ -20,9 +20,11 @@ class CursesGui(View):
 
     def _init_commands(self) -> Dict[int, Commands]:
         command_to_keys = {
-            Commands.MOVE_DOWN: [curses.KEY_DOWN, ord("j")],
-            Commands.MOVE_UP: [curses.KEY_UP, ord("k")],
             Commands.EXIT: [ord("q"), 27],
+            Commands.MOVE_UP: [curses.KEY_UP, ord("k")],
+            Commands.MOVE_DOWN: [curses.KEY_DOWN, ord("j")],
+            Commands.MOVE_LEFT: [curses.KEY_LEFT, ord("h")],
+            Commands.MOVE_RIGHT: [curses.KEY_RIGHT, ord("l")],
             Commands.CREATE_SESSION: [ord("o")],
             Commands.SAVE_SESSION: [ord("s")],
             Commands.RENAME_SESSION: [ord("r")],
@@ -157,7 +159,9 @@ class CursesGui(View):
             self.screen_size[0],
             self.screen_size[1],
         )
-        return self.msgbox.getch() in [ord("y"), ord("Y")]
+        confirmation = self.msgbox.getch() in [ord("y"), ord("Y")]
+        self.msgbox.clear()
+        return confirmation
 
     @_static_cursor
     def create_new_session(self) -> str:
@@ -179,6 +183,7 @@ class CursesGui(View):
         name = self.msgbox.getstr().decode("utf-8")
         curses.curs_set(0)
         curses.noecho()
+        self.msgbox.clear()
         return name
 
     @_static_cursor
@@ -201,4 +206,5 @@ class CursesGui(View):
         name = self.msgbox.getstr().decode("utf-8")
         curses.curs_set(0)
         curses.noecho()
+        self.msgbox.clear()
         return name
