@@ -161,6 +161,14 @@ class CursesGui(View):
         )
         confirmation = self.msgbox.getch() in [ord("y"), ord("Y")]
         self.msgbox.clear()
+        self.msgbox.refresh(
+            0,
+            0,
+            self.screen_size[0] - 1,
+            0,
+            self.screen_size[0],
+            self.screen_size[1],
+        )
         return confirmation
 
     @_static_cursor
@@ -184,6 +192,14 @@ class CursesGui(View):
         curses.curs_set(0)
         curses.noecho()
         self.msgbox.clear()
+        self.msgbox.refresh(
+            0,
+            0,
+            self.screen_size[0] - 1,
+            0,
+            self.screen_size[0],
+            self.screen_size[1],
+        )
         return name
 
     @_static_cursor
@@ -207,4 +223,12 @@ class CursesGui(View):
         curses.curs_set(0)
         curses.noecho()
         self.msgbox.clear()
+        self.msgbox.refresh(
+            0,
+            0,
+            self.screen_size[0] - 1,
+            0,
+            self.screen_size[0],
+            self.screen_size[1],
+        )
         return name
