@@ -1,8 +1,9 @@
 import abc
+from typing import Any
 
 from src.interfaces.model import Model
 from src.interfaces.view import View
-from src.models import Commands
+from src.models import Event
 
 
 class Presenter(abc.ABC):
@@ -13,82 +14,25 @@ class Presenter(abc.ABC):
         """
         self.view: View
         self.model: Model
-        self.position: int
         raise NotImplementedError
 
     @abc.abstractmethod
-    def run(self) -> None:
+    def update_view(self) -> None:
         """
-        Run the presenter.
-        """
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def stop(self) -> None:
-        """
-        Stop the presenter.
+        Get data from the model and update the view.
         """
         raise NotImplementedError
 
     @abc.abstractmethod
-    def handle_input(self, command: Commands) -> None:
+    def get_event(self) -> Event:
         """
-        Handle user input.
-        """
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def running_sessions_menu(self) -> None:
-        """
-        Get all running sessions from the model and show them in a view menu.
+        Get event from the view.
         """
         raise NotImplementedError
 
     @abc.abstractmethod
-    def saved_sessions_menu(self) -> None:
+    def handle_event(self, event: Event, *args: Any) -> None:
         """
-        Get all saved sessions from the model and show them in a view menu.
-        """
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def create_session(self) -> None:
-        """
-        Create a session.
-        """
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def save_session(self) -> None:
-        """
-        Save a session.
-        """
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def load_session(self) -> None:
-        """
-        Load a session.
-        """
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def kill_session(self) -> None:
-        """
-        Kill a session.
-        """
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def delete_session(self) -> None:
-        """
-        Delete a session.
-        """
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def rename_session(self) -> None:
-        """
-        Rename a session.
+        Handle a given `event`.
         """
         raise NotImplementedError

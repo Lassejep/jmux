@@ -11,6 +11,7 @@ class StateMachine(abc.ABC, Generic[State]):
         """
         Interface for state machines.
         """
+        self.state: State
         raise NotImplementedError
 
     @abc.abstractmethod

@@ -53,25 +53,25 @@ class TestRunningSessionsMenu:
         self.presenter.running_sessions = self.labels
 
     def test_updates_view_with_running_sessions(self):
-        self.presenter.running_sessions_menu()
+        self.presenter.multiplexer_menu()
         self.view.show_menu.assert_called_once()
 
     def test_annotates_running_session_name(self):
-        self.presenter.running_sessions_menu()
+        self.presenter.multiplexer_menu()
         self.view.show_menu.assert_called_once_with(
             [f"1. {self.labels[0].name}", f"2. {self.labels[1].name}"]
         )
 
     def test_adds_note_to_session_name_if_session_is_saved(self):
         self.presenter.saved_sessions = [self.labels[1]]
-        self.presenter.running_sessions_menu()
+        self.presenter.multiplexer_menu()
         self.view.show_menu.assert_called_once_with(
             [f"1. {self.labels[0].name}", f"2. {self.labels[1].name} (saved)"]
         )
 
     def test_adds_star_to_session_name_if_session_is_current(self):
         self.presenter.current_session = self.labels[1]
-        self.presenter.running_sessions_menu()
+        self.presenter.multiplexer_menu()
         self.view.show_menu.assert_called_once_with(
             [f"1. {self.labels[0].name}", f"2. {self.labels[1].name}*"]
         )
@@ -79,13 +79,13 @@ class TestRunningSessionsMenu:
     def test_adds_star_and_note_to_session_name_if_session_is_current_and_saved(self):
         self.presenter.current_session = self.labels[1]
         self.presenter.saved_sessions = [self.labels[1]]
-        self.presenter.running_sessions_menu()
+        self.presenter.multiplexer_menu()
         self.view.show_menu.assert_called_once_with(
             [f"1. {self.labels[0].name}", f"2. {self.labels[1].name}* (saved)"]
         )
 
     def test_sets_state_stack_to_running_sessions_menu(self):
-        self.presenter.running_sessions_menu()
+        self.presenter.multiplexer_menu()
         assert self.presenter.state_stack.get() == CursesStates.RUNNING_SESSIONS
 
 

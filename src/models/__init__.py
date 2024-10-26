@@ -3,11 +3,11 @@ __all__ = [
     "JmuxSession",
     "JmuxWindow",
     "SessionLabel",
-    "Commands",
+    "Event",
     "CursesStates",
 ]
 
 from src.models.data_models import (JmuxPane, JmuxSession, JmuxWindow,
                                     SessionLabel)
-from src.models.gui_commands import Commands
+from src.models.events import Event
 from src.models.gui_states import CursesStates

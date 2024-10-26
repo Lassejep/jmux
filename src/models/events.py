@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class Commands(Enum):
+class Event(Enum):
     EXIT = 0
     MOVE_UP = 1
     MOVE_DOWN = 2
