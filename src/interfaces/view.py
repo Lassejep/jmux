@@ -1,7 +1,6 @@
 import abc
-from typing import List
 
-from src.models import Commands
+from src.models import Event
 
 
 class View(abc.ABC):
@@ -10,73 +9,38 @@ class View(abc.ABC):
         """
         Interface for views.
         """
-        self.running: bool
         raise NotImplementedError
 
     @abc.abstractmethod
-    def start(self) -> None:
+    def render(self, *args, **kwargs) -> None:
         """
-        Start the view.
-        """
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def stop(self) -> None:
-        """
-        Stop the view.
+        Render view.
         """
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_input(self) -> Commands:
+    def get_command(self) -> Event:
         """
-        Get user input.
-        """
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def show_menu(self, sessions: List[str]) -> None:
-        """
-        Show a menu with `sessions`.
+        Get a command from the user.
         """
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_confirmation(self, message: str) -> bool:
+    def get_input(self, input_prompt: str) -> str:
         """
-        Show a confirmation `message` and return the user's key input as an int.
-        """
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def show_error(self, message: str) -> None:
-        """
-        Show an error message.
+        Show `input_prompt` and return a string based on user input.
         """
         raise NotImplementedError
 
     @abc.abstractmethod
-    def cursor_down(self) -> None:
+    def get_confirmation(self, confirmation_prompt: str) -> bool:
         """
-        Move the cursor down.
-        """
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def cursor_up(self) -> None:
-        """
-        Move the cursor up.
+        Show `confirmation_prompt` and return a boolean based on user input.
         """
         raise NotImplementedError
 
-    def create_new_session(self) -> str:
+    def show_message(self, message: str) -> None:
         """
-        Show a prompt to create a new session and return the name of the session.
-        """
-        raise NotImplementedError
-
-    def rename_session(self, session_name: str) -> str:
-        """
-        Show a prompt to rename a session and return the new name.
+        Show a message to the user.
         """
         raise NotImplementedError

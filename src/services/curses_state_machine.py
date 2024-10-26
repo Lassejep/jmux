@@ -4,7 +4,7 @@ from src.models import CursesStates
 
 class CursesStateMachine(StateMachine[CursesStates]):
     def __init__(self) -> None:
-        self.state = CursesStates.MAIN
+        self.state: CursesStates = CursesStates.MULTIPLEXER_MENU
 
     def get_state(self) -> CursesStates:
         return self.state
