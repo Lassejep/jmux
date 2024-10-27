@@ -67,47 +67,41 @@ class CursesGUI:
         self._create_file_view()
 
     def _create_presenters(self) -> None:
-        self.borders = CursesPresenter(self.main_view, self.jmux_model, self.state)
         self.multiplexer_menu = MenuPresenter(
             self.multiplexer_view,
             self.jmux_model,
-            self.state,
             MultiplexerSessions(self.jmux_model),
         )
         self.file_menu = MenuPresenter(
-            self.file_view, self.jmux_model, self.state, FileSessions(self.jmux_model)
+            self.file_view, self.jmux_model, FileSessions(self.jmux_model)
         )
-        self.message_menu = MessagePresenter(
-            self.message_window, self.jmux_model, self.state
+        self.message_menu = MessagePresenter(self.message_window, self.jmux_model)
+        self.presenter = CursesPresenter(
+            self.main_view,
+            self.jmux_model,
+            self.state,
+            self.multiplexer_menu,
+            self.file_menu,
+            self.message_menu,
         )
 
     def _populate_views(self) -> None:
-        self.main_view.presenter = self.borders
+        self.main_view.presenter = self.presenter
         self.multiplexer_view.presenter = self.multiplexer_menu
         self.file_view.presenter = self.file_menu
         self.message_window.presenter = self.message_menu
 
     def _main_loop(self) -> None:
-        self.borders.update_view()
-        self.state.set_state(CursesStates.FILE_MENU)
-        self.file_menu.update_view()
-        self.state.set_state(CursesStates.MULTIPLEXER_MENU)
-        self.multiplexer_menu.update_view()
-        while self.running:
-            self._check_state(self.state.get_state())
+        self.presenter.update_view()
+        while self._check_state():
+            event = self.presenter.get_event()
+            self.presenter.handle_event(event)
+            self.presenter.update_view()
 
-    def _check_state(self, state: CursesStates) -> None:
-        match state:
-            case CursesStates.EXIT:
-                self.running = False
-            case CursesStates.MULTIPLEXER_MENU:
-                self.multiplexer_menu()
-            case CursesStates.FILE_MENU:
-                self.file_menu()
-            case CursesStates.SAVE_SESSION:
-                self.message_menu()
-            case _:
-                self.running = False
+    def _check_state(self) -> bool:
+        if self.state.get_state() == CursesStates.EXIT:
+            return False
+        return True
 
 
 if __name__ == "__main__":
