@@ -1,12 +1,14 @@
 import abc
-from typing import Any
+from typing import Any, Generic, Optional, TypeVar
 
 from src.interfaces.model import Model
 from src.interfaces.view import View
 from src.models import Event
 
+ReturnType = TypeVar("ReturnType")
 
-class Presenter(abc.ABC):
+
+class Presenter(abc.ABC, Generic[ReturnType]):
     @abc.abstractmethod
     def __init__(self, view: View, model: Model) -> None:
         """
@@ -31,7 +33,7 @@ class Presenter(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def handle_event(self, event: Event, *args: Any) -> None:
+    def handle_event(self, event: Event, *args: Any) -> Optional[ReturnType]:
         """
         Handle a given `event`.
         """

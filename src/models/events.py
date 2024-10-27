@@ -14,3 +14,6 @@ class Event(Enum):
     SAVE_SESSION = 9
     KILL_SESSION = 10
     UNKNOWN = 11
+    NOOP = 12
+    GET_SESSION = 13
+    SHOW_MESSAGE = 14
