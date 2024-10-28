@@ -122,6 +122,7 @@ class MenuRenderer(View):
             ord("r"): Event.RENAME_SESSION,
             ord("d"): Event.DELETE_SESSION,
             ord("s"): Event.SAVE_SESSION,
+            ord("x"): Event.KILL_SESSION,
             curses.KEY_ENTER: Event.LOAD_SESSION,
             10: Event.LOAD_SESSION,
         }.get(key, Event.UNKNOWN)
