@@ -34,10 +34,11 @@ This will open a TUI where you can manage your tmux sessions.
 - h, l, left, right: Switches between the two menus
 - q, Esc: Quits the program
 - Enter: switches to the selected session or loads the session if it isn't running
-- d: Deletes the selected session or kills it if in the running sessions menu
-- r: Renames the selected session
-- s: Saves the current tmux session
 - o: Creates a new tmux session
+- s: Saves the current tmux session
+- x: Kills the selected tmux session
+- d: Deletes the selected saved session
+- r: Renames the selected session
 
 
 ## Dependencies
