@@ -17,19 +17,34 @@ class CursesPresenter(Presenter[None]):
         """
         Main presenter for the Curses GUI.
         """
-        if not view or not isinstance(view, View):
-            raise TypeError("View must implement the View interface")
-        if not model or not isinstance(model, Model):
-            raise TypeError("Model must implement the Model interface")
-        if not statemachine or not isinstance(statemachine, StateMachine):
-            raise TypeError("Statemachine must be an instance of StateMachine")
         self.view = view
         self.model = model
         self.statemachine = statemachine
         self.multiplexer_menu = multiplexer_menu
         self.file_menu = file_menu
         self.message_window = message_window
+        self._validate_input()
+        self._render_starting_screen()
+
+    def _validate_input(self) -> None:
+        if not isinstance(self.view, View):
+            raise TypeError("View must implement the View interface")
+        if not isinstance(self.model, Model):
+            raise TypeError("Model must implement the Model interface")
+        if not isinstance(self.statemachine, StateMachine):
+            raise TypeError("Statemachine must be an instance of StateMachine")
+        if not isinstance(self.multiplexer_menu, Presenter):
+            raise TypeError("Multiplexer menu must be an instance of Presenter")
+        if not isinstance(self.file_menu, Presenter):
+            raise TypeError("File menu must be an instance of Presenter")
+        if not isinstance(self.message_window, Presenter):
+            raise TypeError("Message window must be an instance of Presenter")
+
+    def _render_starting_screen(self) -> None:
         self.view.render()
+        self.multiplexer_menu.update_view()
+        self.file_menu.update_view()
+        self.message_window.update_view()
 
     def update_view(self) -> None:
         """
@@ -61,9 +76,6 @@ class CursesPresenter(Presenter[None]):
         """
         Handle a given `event`.
         """
-        current_menu = self.multiplexer_menu
-        if self.statemachine.get_state() == CursesStates.FILE_MENU:
-            current_menu = self.file_menu
         match event:
             case Event.EXIT:
                 self.statemachine.set_state(CursesStates.EXIT)
@@ -72,85 +84,105 @@ class CursesPresenter(Presenter[None]):
             case Event.MOVE_RIGHT:
                 self.statemachine.set_state(CursesStates.FILE_MENU)
             case Event.MOVE_UP:
-                current_menu.handle_event(event)
+                self._move_up()
             case Event.MOVE_DOWN:
-                current_menu.handle_event(event)
+                self._move_down()
             case Event.CREATE_SESSION:
-                name = self.message_window.handle_event(event)
-                if not isinstance(name, str):
-                    self.message_window.handle_event(
-                        Event.SHOW_MESSAGE, "Error: no name provided"
-                    )
-                    return
+                name = self._get_new_name(
+                    "Enter a name for the new session:", "Error: no name provided"
+                )
                 self.model.create_session(name)
             case Event.KILL_SESSION:
-                session = current_menu.handle_event(Event.GET_SESSION)
-                if not session:
-                    self.message_window.handle_event(
-                        Event.SHOW_MESSAGE, "Error: no session selected"
-                    )
-                    return
-                if not self.message_window.handle_event(event, session.name):
-                    self.message_window.handle_event(
-                        Event.SHOW_MESSAGE, "Error: session not killed"
-                    )
-                    return
-                self.model.kill_session(session)
+                session = self._get_session()
+                if self._confirm(
+                    f"Kill {session.name}? (y/N)", "Error: session not killed"
+                ):
+                    self.model.kill_session(session)
             case Event.DELETE_SESSION:
-                session = current_menu.handle_event(Event.GET_SESSION)
-                if not session:
-                    self.message_window.handle_event(
-                        Event.SHOW_MESSAGE, "Error: no session selected"
-                    )
-                    return
-                if not self.message_window.handle_event(event, session.name):
-                    self.message_window.handle_event(
-                        Event.SHOW_MESSAGE, "Error: session not deleted"
-                    )
-                    return
-                self.model.delete_session(session)
+                session = self._get_session()
+                if self._confirm(
+                    f"Delete {session.name}? (y/N)", "Error: session not deleted"
+                ):
+                    self.model.delete_session(session)
             case Event.RENAME_SESSION:
-                session = current_menu.handle_event(Event.GET_SESSION)
-                if not session:
-                    self.message_window.handle_event(
-                        Event.SHOW_MESSAGE, "Error: no session selected"
-                    )
+                session = self._get_session()
+                if not self._confirm(
+                    f"Rename {session.name}? (y/N)", "Error: not renamed"
+                ):
                     return
-                new_name = self.message_window.handle_event(event)
-                if not isinstance(new_name, str):
-                    self.message_window.handle_event(
-                        Event.SHOW_MESSAGE, "Error: no name provided"
-                    )
-                    return
+                new_name = self._get_new_name(
+                    f"Enter a new name for {session.name}:", "Error: no name provided"
+                )
                 self.model.rename_session(session, new_name)
             case Event.SAVE_SESSION:
-                session = current_menu.handle_event(Event.GET_SESSION)
-                if not session:
-                    self.message_window.handle_event(
-                        Event.SHOW_MESSAGE, "Error: no session selected"
-                    )
+                session = self._get_session()
+                if session in self.model.list_saved_sessions() and not self._confirm(
+                    f"Overwrite {session.name}? (y/N)", "Error: session not saved"
+                ):
                     return
-                if session in self.model.list_saved_sessions():
-                    if not self.message_window.handle_event(event, session.name):
-                        self.message_window.handle_event(
-                            Event.SHOW_MESSAGE, "Error: session not saved"
-                        )
-                        return
                 self.model.save_session(session)
             case Event.LOAD_SESSION:
-                session = current_menu.handle_event(Event.GET_SESSION)
-                if not session:
-                    self.message_window.handle_event(
-                        Event.SHOW_MESSAGE, "Error: no session selected"
-                    )
-                    return
+                session = self._get_session()
                 self.model.load_session(session)
-            case Event.NOOP:
+            case Event.UNKNOWN:
                 pass
             case _:
                 self.message_window.handle_event(
                     Event.SHOW_MESSAGE, f"Error: running command {event}"
                 )
+
+    def _get_session(self) -> SessionLabel:
+        """
+        Get the currently selected session.
+        """
+        if self.statemachine.get_state() == CursesStates.FILE_MENU:
+            session = self.file_menu.handle_event(Event.GET_SESSION)
+        else:
+            session = self.multiplexer_menu.handle_event(Event.GET_SESSION)
+        if not session or not isinstance(session, SessionLabel):
+            raise ValueError("No session selected")
+        return session
+
+    def _confirm(self, prompt: str, error_message: str) -> bool:
+        """
+        Get a confirmation from the user.
+        """
+        confirmation = self.message_window.handle_event(Event.CONFIRM, prompt)
+        if not isinstance(confirmation, bool):
+            raise ValueError("No confirmation provided")
+        if not confirmation:
+            self.message_window.handle_event(Event.SHOW_MESSAGE, error_message)
+        return confirmation
+
+    def _get_new_name(self, prompt: str, error_message: str) -> str:
+        """
+        Get a new name for a session.
+        """
+        new_name = self.message_window.handle_event(Event.INPUT, prompt)
+        if not new_name:
+            self.message_window.handle_event(Event.SHOW_MESSAGE, error_message)
+            return ""
+        if not isinstance(new_name, str):
+            raise ValueError("No name provided")
+        return new_name
+
+    def _move_up(self) -> None:
+        """
+        Move the cursor up.
+        """
+        if self.statemachine.get_state() == CursesStates.FILE_MENU:
+            self.file_menu.handle_event(Event.MOVE_UP)
+        else:
+            self.multiplexer_menu.handle_event(Event.MOVE_UP)
+
+    def _move_down(self) -> None:
+        """
+        Move the cursor down.
+        """
+        if self.statemachine.get_state() == CursesStates.FILE_MENU:
+            self.file_menu.handle_event(Event.MOVE_DOWN)
+        else:
+            self.multiplexer_menu.handle_event(Event.MOVE_DOWN)
 
 
 class MenuPresenter(Presenter[Optional[SessionLabel]]):
@@ -238,21 +270,9 @@ class MessagePresenter(Presenter[Optional[Union[bool, str]]]):
         """
         match event:
             case Event.SHOW_MESSAGE:
-                self.view.render(args[0])
-            case Event.CREATE_SESSION:
-                return self.view.get_input("Enter a name for the new session: ")
-            case Event.RENAME_SESSION:
-                return self.view.get_input(f"Enter a new name for {args[0]}: ")
-            case Event.DELETE_SESSION:
-                return self.view.get_confirmation(
-                    f"Are you sure you want to delete the session {args[0]}? (y/N)"
-                )
-            case Event.KILL_SESSION:
-                return self.view.get_confirmation(
-                    f"Are you sure you want to kill the session {args[0]}? (y/N)"
-                )
-            case Event.SAVE_SESSION:
-                return self.view.get_confirmation(
-                    f"Are you sure you want to overwrite the session {args[0]}? (y/N)"
-                )
+                self.view.show_message(args[0])
+            case Event.CONFIRM:
+                return self.view.get_confirmation(args[0])
+            case Event.INPUT:
+                return self.view.get_input(args[0])
         return None
