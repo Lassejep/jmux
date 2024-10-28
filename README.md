@@ -21,18 +21,24 @@ python -m pytest
 ```
 
 ## Usage
-To save the current Tmux session run the following command while inside the tmux session you want to save.
-```bash
-jmux save
-```
+### Running the program
 
-To load a saved session run the following command.
+Navigate to the jmux directory and run the following command:
 ```bash
-jmux load
+./jmux
 ```
-It will prompt you for the name of the session you want to load.
-Simply type the name of the session and press enter.
-You will have to manually switch to the tmux session after loading it.
+This will open a TUI where you can manage your tmux sessions.
+
+### Keybinds
+- j, k, down, up: Move the cursor up and down
+- h, l, left, right: Switches between the two menus
+- q, Esc: Quits the program
+- Enter: switches to the selected session or loads the session if it isn't running
+- d: Deletes the selected session or kills it if in the running sessions menu
+- r: Renames the selected session
+- s: Saves the current tmux session
+- o: Creates a new tmux session
+
 
 ## Dependencies
 ### Required
@@ -47,7 +53,11 @@ You will have to manually switch to the tmux session after loading it.
 - [x] Fix bug where the program doesn't recognize already running tmux session.
 - [x] Add the ability to delete saved sessions
 - [x] Add the ability to rename saved sessions
-- [ ] Create a small GUI for the program
+- [x] Create a small TUI for the program
+- [ ] Fix keybinds for the TUI
+- [ ] Implement better input field in the TUI
+- [ ] Add proper error handling to the TUI
+- [ ] Tmux Plugin Manager support
 - [ ] Make panes remember their command history
 - [ ] Make panes remember their running processes and restart them when loading a session
-- [ ] Tmux Plugin Manager support
+- [ ] Create a small GUI for the program
