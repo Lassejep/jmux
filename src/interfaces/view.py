@@ -39,6 +39,7 @@ class View(abc.ABC):
         """
         raise NotImplementedError
 
+    @abc.abstractmethod
     def show_message(self, message: str) -> None:
         """
         Show a message to the user.

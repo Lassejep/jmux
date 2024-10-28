@@ -77,6 +77,7 @@ class MenuRenderer(View):
         self.title = title
         self.screen = curses.newpad(*size)
         self.screen.keypad(True)
+        self.menu_offset = 1
 
     def _refresh(self) -> None:
         lower_corner = (pos + size for pos, size in zip(self.position, self.size))
@@ -86,17 +87,16 @@ class MenuRenderer(View):
         self.screen.clear()
         self._refresh()
 
-    def render(self, items: List[str], cursor: int) -> None:
+    def render(self, items: List[str], cursor_index: int, active: bool) -> None:
         """
         Render the menu.
         """
         self._clear()
         self.screen.addstr(0, 0, self.title, curses.A_BOLD)
-        offset = 1
-        for index, item in enumerate(items):
-            self.screen.addstr(index + offset, 0, item)
-        self.screen.move(cursor + offset, 0)
-        self.screen.chgat(cursor + offset, 0, -1, curses.A_REVERSE)
+        for item_index, item in enumerate(items):
+            self.screen.addstr(item_index + self.menu_offset, 0, item)
+        if active:
+            self.screen.chgat(cursor_index + self.menu_offset, 0, -1, curses.A_REVERSE)
         self._refresh()
 
     def get_command(self) -> Event:
