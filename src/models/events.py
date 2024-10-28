@@ -17,3 +17,5 @@ class Event(Enum):
     NOOP = 12
     GET_SESSION = 13
     SHOW_MESSAGE = 14
+    CONFIRM = 15
+    INPUT = 16
