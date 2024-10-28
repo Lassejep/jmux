@@ -96,7 +96,6 @@ class CursesGUI:
         while self._check_state():
             event = self.presenter.get_event()
             self.presenter.handle_event(event)
-            self.presenter.update_view()
 
     def _check_state(self) -> bool:
         if self.state.get_state() == CursesStates.EXIT:

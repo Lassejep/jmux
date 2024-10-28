@@ -23,6 +23,7 @@ class CursesPresenter(Presenter[None]):
         self.multiplexer_menu = multiplexer_menu
         self.file_menu = file_menu
         self.message_window = message_window
+        self.active = False
         self._validate_input()
         self._render_starting_screen()
 
@@ -42,6 +43,7 @@ class CursesPresenter(Presenter[None]):
 
     def _render_starting_screen(self) -> None:
         self.view.render()
+        self.multiplexer_menu.active = True
         self.multiplexer_menu.update_view()
         self.file_menu.update_view()
         self.message_window.update_view()
@@ -50,18 +52,15 @@ class CursesPresenter(Presenter[None]):
         """
         Update views based on the current state.
         """
-        match self.statemachine.get_state():
-            case CursesStates.MULTIPLEXER_MENU:
-                self.multiplexer_menu.update_view()
-            case CursesStates.FILE_MENU:
-                self.file_menu.update_view()
-            case CursesStates.MESSAGE_WINDOW:
-                self.message_window.update_view()
+        self.message_window.update_view()
+        self.file_menu.update_view()
+        self.multiplexer_menu.update_view()
 
     def get_event(self) -> Event:
         """
         Get an event from the presenter based on the current state.
         """
+        self.update_view()
         match self.statemachine.get_state():
             case CursesStates.MULTIPLEXER_MENU:
                 return self.multiplexer_menu.get_event()
@@ -81,15 +80,19 @@ class CursesPresenter(Presenter[None]):
                 self.statemachine.set_state(CursesStates.EXIT)
             case Event.MOVE_LEFT:
                 self.statemachine.set_state(CursesStates.MULTIPLEXER_MENU)
+                self.multiplexer_menu.active = True
+                self.file_menu.active = False
             case Event.MOVE_RIGHT:
                 self.statemachine.set_state(CursesStates.FILE_MENU)
+                self.file_menu.active = True
+                self.multiplexer_menu.active = False
             case Event.MOVE_UP:
                 self._move_up()
             case Event.MOVE_DOWN:
                 self._move_down()
             case Event.CREATE_SESSION:
                 name = self._get_new_name(
-                    "Enter a name for the new session:", "Error: no name provided"
+                    "Enter a name for the new session: ", "Error: no name provided"
                 )
                 self.model.create_session(name)
             case Event.KILL_SESSION:
@@ -111,7 +114,7 @@ class CursesPresenter(Presenter[None]):
                 ):
                     return
                 new_name = self._get_new_name(
-                    f"Enter a new name for {session.name}:", "Error: no name provided"
+                    f"Enter a new name for {session.name}: ", "Error: no name provided"
                 )
                 self.model.rename_session(session, new_name)
             case Event.SAVE_SESSION:
@@ -192,21 +195,31 @@ class MenuPresenter(Presenter[Optional[SessionLabel]]):
         """
         Presenter for Menus.
         """
-        if not view or not isinstance(view, View):
-            raise TypeError("View must implement the View interface")
-        if not model or not isinstance(model, Model):
-            raise TypeError("Model must implement the Model interface")
         self.view = view
         self.model = model
         self.session_handler: SessionHandler = session_handler
-        self.position = 0
+        self.cursor_position = 0
+        self.active = False
+        self._validate_input()
+
+    def _validate_input(self) -> None:
+        if not isinstance(self.view, View):
+            raise TypeError("View must implement the View interface")
+        if not isinstance(self.model, Model):
+            raise TypeError("Model must implement the Model interface")
+        if not isinstance(self.session_handler, SessionHandler):
+            raise TypeError("SessionHandler must be an instance of SessionHandler")
 
     def update_view(self) -> None:
         """
         Get data from the model and update the view.
         """
         self.sessions = self.session_handler.update_sessions()
-        self.view.render(self.session_handler.get_annotated_sessions(), self.position)
+        self.view.render(
+            self.session_handler.get_annotated_sessions(),
+            self.cursor_position,
+            self.active,
+        )
 
     def get_event(self) -> Event:
         """
@@ -224,20 +237,20 @@ class MenuPresenter(Presenter[Optional[SessionLabel]]):
             case Event.MOVE_DOWN:
                 self._cursor_down()
             case Event.GET_SESSION:
-                return self.session_handler.sessions[self.position]
+                return self.session_handler.sessions[self.cursor_position]
         return None
 
     def _cursor_up(self) -> None:
-        if self.position > 0:
-            self.position -= 1
+        if self.cursor_position > 0:
+            self.cursor_position -= 1
         else:
-            self.position = 0
+            self.cursor_position = 0
 
     def _cursor_down(self) -> None:
-        if self.position < len(self.sessions) - 1:
-            self.position += 1
+        if self.cursor_position < len(self.sessions) - 1:
+            self.cursor_position += 1
         else:
-            self.position = len(self.sessions) - 1
+            self.cursor_position = len(self.sessions) - 1
 
 
 class MessagePresenter(Presenter[Optional[Union[bool, str]]]):
@@ -245,12 +258,16 @@ class MessagePresenter(Presenter[Optional[Union[bool, str]]]):
         """
         Presenter for the message window.
         """
-        if not view or not isinstance(view, View):
-            raise TypeError("View must be an instance of View")
-        if not model or not isinstance(model, Model):
-            raise TypeError("Model must be an instance of Model")
         self.view = view
         self.model = model
+        self.active = False
+        self._validate_input()
+
+    def _validate_input(self) -> None:
+        if not isinstance(self.view, View):
+            raise TypeError("View must implement the View interface")
+        if not isinstance(self.model, Model):
+            raise TypeError("Model must implement the Model interface")
 
     def update_view(self) -> None:
         """

@@ -16,6 +16,7 @@ class Presenter(abc.ABC, Generic[ReturnType]):
         """
         self.view: View
         self.model: Model
+        self.active: bool
         raise NotImplementedError
 
     @abc.abstractmethod
