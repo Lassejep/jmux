@@ -1,5 +1,5 @@
+from src.data_models import CursesStates
 from src.interfaces import StateMachine
-from src.models import CursesStates
 
 
 class CursesStateMachine(StateMachine[CursesStates]):

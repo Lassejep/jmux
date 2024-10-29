@@ -2,8 +2,8 @@ import os
 import subprocess
 from typing import List
 
+from src.data_models import JmuxPane, JmuxSession, JmuxWindow, SessionLabel
 from src.interfaces import Multiplexer
-from src.models import JmuxPane, JmuxSession, JmuxWindow, SessionLabel
 
 
 class TmuxClient(Multiplexer):

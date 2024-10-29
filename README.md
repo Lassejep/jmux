@@ -59,6 +59,7 @@ This will open a TUI where you can manage your tmux sessions.
 - [ ] Implement better input field in the TUI
 - [ ] Add proper error handling to the TUI
 - [ ] Tmux Plugin Manager support
+- [ ] Implement scrolling in the TUI
 - [ ] Make panes remember their command history
 - [ ] Make panes remember their running processes and restart them when loading a session
 - [ ] Create a small GUI for the program
