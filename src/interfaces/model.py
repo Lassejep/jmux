@@ -1,4 +1,4 @@
-import abc
+from abc import ABC, abstractmethod
 from typing import List
 
 from src.data_models import SessionLabel
@@ -6,8 +6,8 @@ from src.interfaces.file_handler import FileHandler
 from src.interfaces.multiplexer import Multiplexer
 
 
-class Model(abc.ABC):
-    @abc.abstractmethod
+class Model(ABC):
+    @abstractmethod
     def __init__(self, multiplexer: Multiplexer, file_handler: FileHandler) -> None:
         """
         Abstract class for the model of the appllication.
@@ -15,7 +15,7 @@ class Model(abc.ABC):
         """
         raise NotImplementedError
 
-    @abc.abstractmethod
+    @abstractmethod
     def create_session(self, session_name: str) -> None:
         """
         Create a new session in the terminal multiplexer with the name `session_name`.
@@ -28,28 +28,28 @@ class Model(abc.ABC):
         """
         raise NotImplementedError
 
-    @abc.abstractmethod
+    @abstractmethod
     def load_session(self, label: SessionLabel) -> None:
         """
         Load the session with `label` from a file.
         """
         raise NotImplementedError
 
-    @abc.abstractmethod
+    @abstractmethod
     def kill_session(self, label: SessionLabel) -> None:
         """
         Kills the session with `label` in the terminal multiplexer.
         """
         raise NotImplementedError
 
-    @abc.abstractmethod
+    @abstractmethod
     def delete_session(self, label: SessionLabel) -> None:
         """
         Delete the session with `label` from the file system.
         """
         raise NotImplementedError
 
-    @abc.abstractmethod
+    @abstractmethod
     def rename_session(self, label: SessionLabel, new_name: str) -> None:
         """
         Rename the session with `label` to `new_name` in the multiplexer
@@ -57,7 +57,7 @@ class Model(abc.ABC):
         """
         raise NotImplementedError
 
-    @abc.abstractmethod
+    @abstractmethod
     def list_saved_sessions(self) -> List[SessionLabel]:
         """
         List all sessions saved in the file system.
@@ -70,7 +70,7 @@ class Model(abc.ABC):
         """
         raise NotImplementedError
 
-    @abc.abstractmethod
+    @abstractmethod
     def get_active_session(self) -> SessionLabel:
         """
         Get the currently active/focused session in the terminal multiplexer.
