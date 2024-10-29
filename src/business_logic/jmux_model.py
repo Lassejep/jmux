@@ -1,7 +1,7 @@
 from typing import List
 
+from src.data_models import SessionLabel
 from src.interfaces import FileHandler, Model, Multiplexer
-from src.models import SessionLabel
 
 
 class JmuxModel(Model):

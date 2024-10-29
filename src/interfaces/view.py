@@ -1,6 +1,6 @@
 import abc
 
-from src.models import Event
+from src.data_models import Event
 
 
 class View(abc.ABC):

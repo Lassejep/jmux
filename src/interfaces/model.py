@@ -1,9 +1,9 @@
 import abc
 from typing import List
 
+from src.data_models import SessionLabel
 from src.interfaces.file_handler import FileHandler
 from src.interfaces.multiplexer import Multiplexer
-from src.models import SessionLabel
 
 
 class Model(abc.ABC):

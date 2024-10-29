@@ -2,7 +2,7 @@ import abc
 from pathlib import Path
 from typing import List
 
-from src.models import JmuxSession, SessionLabel
+from src.data_models import JmuxSession, SessionLabel
 
 
 class FileHandler(abc.ABC):

@@ -3,8 +3,8 @@ import pathlib
 from dataclasses import asdict
 from typing import List
 
+from src.data_models import JmuxPane, JmuxSession, JmuxWindow, SessionLabel
 from src.interfaces import FileHandler
-from src.models import JmuxPane, JmuxSession, JmuxWindow, SessionLabel
 
 
 class JsonHandler(FileHandler):

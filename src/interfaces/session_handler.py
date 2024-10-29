@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import List
 
+from src.data_models import SessionLabel
 from src.interfaces.model import Model
-from src.models import SessionLabel
 
 
 class SessionHandler(ABC):

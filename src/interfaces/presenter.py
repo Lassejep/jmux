@@ -1,9 +1,9 @@
 import abc
 from typing import Any, Generic, Optional, TypeVar
 
+from src.data_models import Event
 from src.interfaces.model import Model
 from src.interfaces.view import View
-from src.models import Event
 
 ReturnType = TypeVar("ReturnType")
 
@@ -17,6 +17,13 @@ class Presenter(abc.ABC, Generic[ReturnType]):
         self.view: View
         self.model: Model
         self.active: bool
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def activate(self) -> None:
+        """
+        Activate the presenter.
+        """
         raise NotImplementedError
 
     @abc.abstractmethod
