@@ -2,7 +2,6 @@ import curses
 
 from src.interfaces import Model
 
-from .curses_state_machine import CursesStateMachine
 from .presenters import CommandBarPresenter, CursesPresenter, MenuPresenter
 from .session_handlers import FileSessions, MultiplexerSessions
 from .views import CommandBarRenderer, CursesView, MenuRenderer
@@ -12,7 +11,6 @@ class CursesGui:
     def __init__(self, model: Model) -> None:
         self.jmux_model = model
         self.running = False
-        self.state = CursesStateMachine()
 
     def run(self) -> None:
         self.running = True
@@ -72,7 +70,6 @@ class CursesGui:
         self.presenter = CursesPresenter(
             self.main_view,
             self.jmux_model,
-            self.state,
             self.multiplexer_menu,
             self.file_menu,
             self.message_menu,
