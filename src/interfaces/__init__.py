@@ -4,7 +4,6 @@ __all__ = [
     "Presenter",
     "View",
     "FileHandler",
-    "StateMachine",
     "SessionHandler",
 ]
 
@@ -13,5 +12,4 @@ from .model import Model
 from .multiplexer import Multiplexer
 from .presenter import Presenter
 from .session_handler import SessionHandler
-from .state_machine import StateMachine
 from .view import View

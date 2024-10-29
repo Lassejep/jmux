@@ -1,7 +1,7 @@
 from typing import Any, Optional, Union
 
 from src.data_models import CursesStates, Event, SessionLabel
-from src.interfaces import Model, Presenter, StateMachine, View
+from src.interfaces import Model, Presenter, View
 
 
 class CursesPresenter(Presenter[None]):
@@ -9,7 +9,6 @@ class CursesPresenter(Presenter[None]):
         self,
         view: View,
         model: Model,
-        statemachine: StateMachine[CursesStates],
         multiplexer_menu: Presenter[Optional[SessionLabel]],
         file_menu: Presenter[Optional[SessionLabel]],
         message_window: Presenter[Optional[Union[bool, str]]],
@@ -19,11 +18,11 @@ class CursesPresenter(Presenter[None]):
         """
         self.view = view
         self.model = model
-        self.statemachine = statemachine
         self.multiplexer_menu = multiplexer_menu
         self.file_menu = file_menu
         self.message_window = message_window
         self.active = False
+        self.state = CursesStates.MULTIPLEXER_MENU
         self._validate_input()
         self._render_starting_screen()
 
@@ -32,8 +31,6 @@ class CursesPresenter(Presenter[None]):
             raise TypeError("View must implement the View interface")
         if not isinstance(self.model, Model):
             raise TypeError("Model must implement the Model interface")
-        if not isinstance(self.statemachine, StateMachine):
-            raise TypeError("Statemachine must be an instance of StateMachine")
         if not isinstance(self.multiplexer_menu, Presenter):
             raise TypeError("Multiplexer menu must be an instance of Presenter")
         if not isinstance(self.file_menu, Presenter):
@@ -57,7 +54,7 @@ class CursesPresenter(Presenter[None]):
             self.update_view()
             event = self.get_event()
             self.handle_event(event)
-            if self.statemachine.get_state() == CursesStates.EXIT:
+            if self.state == CursesStates.EXIT:
                 self.active = False
 
     def update_view(self) -> None:
@@ -72,7 +69,7 @@ class CursesPresenter(Presenter[None]):
         """
         Get an event from the presenter based on the current state.
         """
-        match self.statemachine.get_state():
+        match self.state:
             case CursesStates.MULTIPLEXER_MENU:
                 return self.multiplexer_menu.get_event()
             case CursesStates.FILE_MENU:
@@ -88,13 +85,13 @@ class CursesPresenter(Presenter[None]):
         """
         match event:
             case Event.EXIT:
-                self.statemachine.set_state(CursesStates.EXIT)
+                self.state = CursesStates.EXIT
             case Event.MOVE_LEFT:
-                self.statemachine.set_state(CursesStates.MULTIPLEXER_MENU)
+                self.state = CursesStates.MULTIPLEXER_MENU
                 self.multiplexer_menu.activate()
                 self.file_menu.active = False
             case Event.MOVE_RIGHT:
-                self.statemachine.set_state(CursesStates.FILE_MENU)
+                self.state = CursesStates.FILE_MENU
                 self.file_menu.activate()
                 self.multiplexer_menu.active = False
             case Event.MOVE_UP:
@@ -149,7 +146,7 @@ class CursesPresenter(Presenter[None]):
         """
         Get the currently selected session.
         """
-        if self.statemachine.get_state() == CursesStates.FILE_MENU:
+        if self.state == CursesStates.FILE_MENU:
             session = self.file_menu.handle_event(Event.GET_SESSION)
         else:
             session = self.multiplexer_menu.handle_event(Event.GET_SESSION)
@@ -184,7 +181,7 @@ class CursesPresenter(Presenter[None]):
         """
         Move the cursor up.
         """
-        if self.statemachine.get_state() == CursesStates.FILE_MENU:
+        if self.state == CursesStates.FILE_MENU:
             self.file_menu.handle_event(Event.MOVE_UP)
         else:
             self.multiplexer_menu.handle_event(Event.MOVE_UP)
@@ -193,7 +190,7 @@ class CursesPresenter(Presenter[None]):
         """
         Move the cursor down.
         """
-        if self.statemachine.get_state() == CursesStates.FILE_MENU:
+        if self.state == CursesStates.FILE_MENU:
             self.file_menu.handle_event(Event.MOVE_DOWN)
         else:
             self.multiplexer_menu.handle_event(Event.MOVE_DOWN)
