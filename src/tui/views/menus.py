@@ -5,7 +5,7 @@ from src.data_models import Event
 from src.interfaces import Presenter, View
 
 
-class MenuRenderer(View):
+class MenuRenderer(View[Event]):
     def __init__(
         self,
         position: Tuple[int, int],

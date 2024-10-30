@@ -5,7 +5,7 @@ from src.data_models import Event
 from src.interfaces import Presenter, View
 
 
-class CommandBarRenderer(View):
+class CommandBarRenderer(View[Event]):
     def __init__(self, position: Tuple[int, int], size: Tuple[int, int]) -> None:
         """
         A window to show messages.

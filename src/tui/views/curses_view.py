@@ -4,7 +4,7 @@ from src.data_models import Event
 from src.interfaces import Presenter, View
 
 
-class CursesView(View):
+class CursesView(View[Event]):
     def __init__(self, window: curses.window) -> None:
         """
         A Curses GUI that implements the View interface.
