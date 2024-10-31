@@ -23,27 +23,7 @@ class MenuRenderer(View[Event]):
         self.screen.keypad(True)
         self.menu_offset = 1
 
-    def _refresh(self) -> None:
-        lower_corner = (pos + size for pos, size in zip(self.position, self.size))
-        self.screen.refresh(0, 0, *self.position, *lower_corner)
-
-    def _clear(self) -> None:
-        self.screen.clear()
-        self._refresh()
-
-    def render(self, items: List[str], cursor_index: int, active: bool) -> None:
-        """
-        Render the menu.
-        """
-        self._clear()
-        self.screen.addstr(0, 0, self.title, curses.A_BOLD)
-        for item_index, item in enumerate(items):
-            self.screen.addstr(item_index + self.menu_offset, 0, item)
-        if active:
-            self.screen.chgat(cursor_index + self.menu_offset, 0, -1, curses.A_REVERSE)
-        self._refresh()
-
-    def get_command(self) -> Event:
+    def get_event(self) -> Event:
         """
         Get a command from the user.
         """
@@ -71,20 +51,22 @@ class MenuRenderer(View[Event]):
             10: Event.LOAD_SESSION,
         }.get(key, Event.UNKNOWN)
 
-    def get_input(self, input_prompt: str) -> str:
+    def render(self, items: List[str], cursor_index: int, active: bool) -> None:
         """
-        Show `input_prompt` and return a string based on user input.
+        Render the menu.
         """
-        raise NotImplementedError
+        self._clear()
+        self.screen.addstr(0, 0, self.title, curses.A_BOLD)
+        for item_index, item in enumerate(items):
+            self.screen.addstr(item_index + self.menu_offset, 0, item)
+        if active:
+            self.screen.chgat(cursor_index + self.menu_offset, 0, -1, curses.A_REVERSE)
+        self._refresh()
 
-    def get_confirmation(self, confirmation_prompt: str) -> bool:
-        """
-        Show `confirmation_prompt` and return a boolean based on user input.
-        """
-        raise NotImplementedError
+    def _clear(self) -> None:
+        self.screen.clear()
+        self._refresh()
 
-    def show_message(self, message: str) -> None:
-        """
-        Show a message to the user.
-        """
-        raise NotImplementedError
+    def _refresh(self) -> None:
+        lower_corner = (pos + size for pos, size in zip(self.position, self.size))
+        self.screen.refresh(0, 0, *self.position, *lower_corner)

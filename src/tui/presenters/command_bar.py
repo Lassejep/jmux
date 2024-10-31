@@ -36,7 +36,7 @@ class CommandBarPresenter(Presenter[Event, Optional[Union[bool, str]]]):
         """
         Get event from the view.
         """
-        return self.view.get_command()
+        return self.view.get_event()
 
     def handle_event(self, event: Event, *args: Any) -> Optional[Union[bool, str]]:
         """

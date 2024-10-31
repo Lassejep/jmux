@@ -14,6 +14,12 @@ class CursesView(View[Event]):
         self.window_size = self.window.getmaxyx()
         self.window.keypad(True)
 
+    def get_event(self) -> Event:
+        """
+        Capture user input.
+        """
+        raise NotImplementedError
+
     def render(self) -> None:
         """
         Render the view.
@@ -34,27 +40,3 @@ class CursesView(View[Event]):
             self.window_size[0] - 3, self.window_size[1] // 2, curses.ACS_BTEE
         )
         self.window.refresh()
-
-    def get_command(self) -> Event:
-        """
-        Capture user input.
-        """
-        raise NotImplementedError
-
-    def get_confirmation(self, confirmation_prompt: str) -> bool:
-        """
-        Show the `message` and get return the key pressed.
-        """
-        raise NotImplementedError
-
-    def get_input(self, input_prompt: str) -> str:
-        """
-        Show the `message` and get return the input.
-        """
-        raise NotImplementedError
-
-    def show_message(self, message: str) -> None:
-        """
-        Show an error message.
-        """
-        raise NotImplementedError

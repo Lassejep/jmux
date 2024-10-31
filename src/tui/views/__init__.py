@@ -1,5 +1,5 @@
-__all__ = ["CursesView", "CommandBarRenderer", "MenuRenderer"]
+__all__ = ["CursesView", "MenuRenderer", "InputFieldRenderer"]
 
-from .command_bar import CommandBarRenderer
 from .curses_view import CursesView
+from .input_field import InputFieldRenderer
 from .menus import MenuRenderer
