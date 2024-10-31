@@ -6,25 +6,16 @@ from src.interfaces import Model, Presenter, SessionHandler, View
 
 class MenuPresenter(Presenter[Event, Optional[SessionLabel]]):
     def __init__(
-        self, view: View, model: Model, session_handler: SessionHandler
+        self, view: View[Event], model: Model, session_handler: SessionHandler
     ) -> None:
         """
         Presenter for Menus.
         """
-        self.view = view
-        self.model = model
+        self.view: View[Event] = view
+        self.model: Model = model
         self.session_handler: SessionHandler = session_handler
-        self.cursor_position = 0
-        self.active = False
-        self._validate_input()
-
-    def _validate_input(self) -> None:
-        if not isinstance(self.view, View):
-            raise TypeError("View must implement the View interface")
-        if not isinstance(self.model, Model):
-            raise TypeError("Model must implement the Model interface")
-        if not isinstance(self.session_handler, SessionHandler):
-            raise TypeError("SessionHandler must be an instance of SessionHandler")
+        self.cursor_position: int = 0
+        self.active: bool = False
 
     def activate(self) -> None:
         """
