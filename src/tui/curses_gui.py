@@ -2,9 +2,9 @@ import curses
 
 from src.interfaces import Model
 
-from .presenters import CommandBarPresenter, CursesPresenter, MenuPresenter
+from .presenters import CursesPresenter, InputFieldPresenter, MenuPresenter
 from .session_handlers import FileSessions, MultiplexerSessions
-from .views import CommandBarRenderer, CursesView, MenuRenderer
+from .views import CursesView, InputFieldRenderer, MenuRenderer
 
 
 class CursesGui:
@@ -36,10 +36,10 @@ class CursesGui:
         curses.use_default_colors()
         curses.init_pair(1, curses.COLOR_RED, -1)
 
-    def _create_message_window(self) -> None:
+    def _create_command_bar(self) -> None:
         position = (self.screen_height - 2, 1)
-        size = (1, self.screen_width - 2)
-        self.message_window = CommandBarRenderer(position, size)
+        size = (1, self.screen_width - 3)
+        self.command_bar_view = InputFieldRenderer(position, size)
 
     def _create_multiplexer_view(self) -> None:
         position = (1, 1)
@@ -53,7 +53,7 @@ class CursesGui:
 
     def _create_views(self, stdscr) -> None:
         self.main_view = CursesView(stdscr)
-        self._create_message_window()
+        self._create_command_bar()
         self._create_multiplexer_view()
         self._create_file_view()
 
@@ -66,20 +66,19 @@ class CursesGui:
         self.file_menu = MenuPresenter(
             self.file_view, self.jmux_model, FileSessions(self.jmux_model)
         )
-        self.message_menu = CommandBarPresenter(self.message_window, self.jmux_model)
+        self.command_bar = InputFieldPresenter(self.command_bar_view, self.jmux_model)
         self.presenter = CursesPresenter(
             self.main_view,
             self.jmux_model,
             self.multiplexer_menu,
             self.file_menu,
-            self.message_menu,
+            self.command_bar,
         )
 
     def _populate_views(self) -> None:
         self.main_view.presenter = self.presenter
         self.multiplexer_view.presenter = self.multiplexer_menu
         self.file_view.presenter = self.file_menu
-        self.message_window.presenter = self.message_menu
 
     def _main_loop(self) -> None:
         self.presenter.activate()

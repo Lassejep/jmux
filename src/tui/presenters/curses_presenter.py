@@ -11,7 +11,7 @@ class CursesPresenter(Presenter[Event, None]):
         model: Model,
         multiplexer_menu: Presenter[Event, Optional[SessionLabel]],
         file_menu: Presenter[Event, Optional[SessionLabel]],
-        message_window: Presenter[Event, Optional[Union[bool, str]]],
+        command_bar: Presenter[Event, Union[bool, str, None]],
     ) -> None:
         """
         Main presenter for the Curses GUI.
@@ -20,7 +20,7 @@ class CursesPresenter(Presenter[Event, None]):
         self.model = model
         self.multiplexer_menu = multiplexer_menu
         self.file_menu = file_menu
-        self.message_window = message_window
+        self.command_bar = command_bar
         self.active = False
         self.state = CursesStates.MULTIPLEXER_MENU
         self._validate_input()
@@ -35,7 +35,7 @@ class CursesPresenter(Presenter[Event, None]):
             raise TypeError("Multiplexer menu must be an instance of Presenter")
         if not isinstance(self.file_menu, Presenter):
             raise TypeError("File menu must be an instance of Presenter")
-        if not isinstance(self.message_window, Presenter):
+        if not isinstance(self.command_bar, Presenter):
             raise TypeError("Message window must be an instance of Presenter")
 
     def _render_starting_screen(self) -> None:
@@ -43,7 +43,7 @@ class CursesPresenter(Presenter[Event, None]):
         self.multiplexer_menu.activate()
         self.multiplexer_menu.update_view()
         self.file_menu.update_view()
-        self.message_window.update_view()
+        self.command_bar.update_view()
 
     def activate(self) -> None:
         """
@@ -61,7 +61,7 @@ class CursesPresenter(Presenter[Event, None]):
         """
         Update views based on the current state.
         """
-        self.message_window.update_view()
+        self.command_bar.update_view()
         self.file_menu.update_view()
         self.multiplexer_menu.update_view()
 
@@ -75,7 +75,7 @@ class CursesPresenter(Presenter[Event, None]):
             case CursesStates.FILE_MENU:
                 return self.file_menu.get_event()
             case CursesStates.MESSAGE_WINDOW:
-                return self.message_window.get_event()
+                return self.command_bar.get_event()
             case _:
                 return Event.EXIT
 
@@ -102,7 +102,8 @@ class CursesPresenter(Presenter[Event, None]):
                 name = self._get_new_name(
                     "Enter a name for the new session: ", "Error: no name provided"
                 )
-                self.model.create_session(name)
+                if name:
+                    self.model.create_session(name)
             case Event.KILL_SESSION:
                 session = self._get_session()
                 if self._confirm(
@@ -124,7 +125,8 @@ class CursesPresenter(Presenter[Event, None]):
                 new_name = self._get_new_name(
                     f"Enter a new name for {session.name}: ", "Error: no name provided"
                 )
-                self.model.rename_session(session, new_name)
+                if new_name:
+                    self.model.rename_session(session, new_name)
             case Event.SAVE_SESSION:
                 session = self._get_session()
                 if session in self.model.list_saved_sessions() and not self._confirm(
@@ -138,7 +140,7 @@ class CursesPresenter(Presenter[Event, None]):
             case Event.UNKNOWN:
                 pass
             case _:
-                self.message_window.handle_event(
+                self.command_bar.handle_event(
                     Event.SHOW_MESSAGE, f"Error: running command {event}"
                 )
 
@@ -158,20 +160,20 @@ class CursesPresenter(Presenter[Event, None]):
         """
         Get a confirmation from the user.
         """
-        confirmation = self.message_window.handle_event(Event.CONFIRM, prompt)
+        confirmation = self.command_bar.handle_event(Event.CONFIRM, prompt)
         if not isinstance(confirmation, bool):
             raise ValueError("No confirmation provided")
         if not confirmation:
-            self.message_window.handle_event(Event.SHOW_MESSAGE, error_message)
+            self.command_bar.handle_event(Event.SHOW_MESSAGE, error_message)
         return confirmation
 
     def _get_new_name(self, prompt: str, error_message: str) -> str:
         """
         Get a new name for a session.
         """
-        new_name = self.message_window.handle_event(Event.INPUT, prompt)
+        new_name = self.command_bar.handle_event(Event.INPUT, prompt)
         if not new_name:
-            self.message_window.handle_event(Event.SHOW_MESSAGE, error_message)
+            self.command_bar.handle_event(Event.SHOW_MESSAGE, error_message)
             return ""
         if not isinstance(new_name, str):
             raise ValueError("No name provided")
