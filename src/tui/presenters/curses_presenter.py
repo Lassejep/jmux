@@ -7,7 +7,7 @@ from src.interfaces import Model, Presenter, View
 class CursesPresenter(Presenter[Event, None]):
     def __init__(
         self,
-        view: View,
+        view: View[Event],
         model: Model,
         multiplexer_menu: Presenter[Event, Optional[SessionLabel]],
         file_menu: Presenter[Event, Optional[SessionLabel]],
@@ -16,27 +16,16 @@ class CursesPresenter(Presenter[Event, None]):
         """
         Main presenter for the Curses GUI.
         """
-        self.view = view
-        self.model = model
-        self.multiplexer_menu = multiplexer_menu
-        self.file_menu = file_menu
-        self.command_bar = command_bar
-        self.active = False
-        self.state = CursesStates.MULTIPLEXER_MENU
-        self._validate_input()
+        self.view: View[Event] = view
+        self.model: Model = model
+        self.multiplexer_menu: Presenter[Event, Optional[SessionLabel]] = (
+            multiplexer_menu
+        )
+        self.file_menu: Presenter[Event, Optional[SessionLabel]] = file_menu
+        self.command_bar: Presenter[Event, Union[bool, str, None]] = command_bar
+        self.active: bool = False
+        self.state: CursesStates = CursesStates.MULTIPLEXER_MENU
         self._render_starting_screen()
-
-    def _validate_input(self) -> None:
-        if not isinstance(self.view, View):
-            raise TypeError("View must implement the View interface")
-        if not isinstance(self.model, Model):
-            raise TypeError("Model must implement the Model interface")
-        if not isinstance(self.multiplexer_menu, Presenter):
-            raise TypeError("Multiplexer menu must be an instance of Presenter")
-        if not isinstance(self.file_menu, Presenter):
-            raise TypeError("File menu must be an instance of Presenter")
-        if not isinstance(self.command_bar, Presenter):
-            raise TypeError("Message window must be an instance of Presenter")
 
     def _render_starting_screen(self) -> None:
         self.view.render()
@@ -87,62 +76,29 @@ class CursesPresenter(Presenter[Event, None]):
             case Event.EXIT:
                 self.state = CursesStates.EXIT
             case Event.MOVE_LEFT:
-                self.state = CursesStates.MULTIPLEXER_MENU
-                self.multiplexer_menu.activate()
-                self.file_menu.active = False
+                self._move_left()
             case Event.MOVE_RIGHT:
-                self.state = CursesStates.FILE_MENU
-                self.file_menu.activate()
-                self.multiplexer_menu.active = False
+                self._move_right()
             case Event.MOVE_UP:
                 self._move_up()
             case Event.MOVE_DOWN:
                 self._move_down()
-            case Event.CREATE_SESSION:
-                name = self._get_new_name(
-                    "Enter a name for the new session: ", "Error: no name provided"
-                )
-                if name:
-                    self.model.create_session(name)
-            case Event.KILL_SESSION:
-                session = self._get_session()
-                if self._confirm(
-                    f"Kill {session.name}? (y/N)", "Error: session not killed"
-                ):
-                    self.model.kill_session(session)
-            case Event.DELETE_SESSION:
-                session = self._get_session()
-                if self._confirm(
-                    f"Delete {session.name}? (y/N)", "Error: session not deleted"
-                ):
-                    self.model.delete_session(session)
-            case Event.RENAME_SESSION:
-                session = self._get_session()
-                if not self._confirm(
-                    f"Rename {session.name}? (y/N)", "Error: not renamed"
-                ):
-                    return
-                new_name = self._get_new_name(
-                    f"Enter a new name for {session.name}: ", "Error: no name provided"
-                )
-                if new_name:
-                    self.model.rename_session(session, new_name)
-            case Event.SAVE_SESSION:
-                session = self._get_session()
-                if session in self.model.list_saved_sessions() and not self._confirm(
-                    f"Overwrite {session.name}? (y/N)", "Error: session not saved"
-                ):
-                    return
-                self.model.save_session(session)
             case Event.LOAD_SESSION:
-                session = self._get_session()
-                self.model.load_session(session)
+                self._load_session()
+            case Event.CREATE_SESSION:
+                self._create_session()
+            case Event.KILL_SESSION:
+                self._kill_session()
+            case Event.SAVE_SESSION:
+                self._save_session()
+            case Event.DELETE_SESSION:
+                self._delete_session()
+            case Event.RENAME_SESSION:
+                self._rename_session()
             case Event.UNKNOWN:
                 pass
             case _:
-                self.command_bar.handle_event(
-                    Event.SHOW_MESSAGE, f"Error: running command {event}"
-                )
+                self._invalid_command(event)
 
     def _get_session(self) -> SessionLabel:
         """
@@ -179,6 +135,22 @@ class CursesPresenter(Presenter[Event, None]):
             raise ValueError("No name provided")
         return new_name
 
+    def _move_left(self) -> None:
+        """
+        Move the cursor left.
+        """
+        self.state = CursesStates.MULTIPLEXER_MENU
+        self.multiplexer_menu.activate()
+        self.file_menu.active = False
+
+    def _move_right(self) -> None:
+        """
+        Move the cursor right.
+        """
+        self.state = CursesStates.FILE_MENU
+        self.file_menu.activate()
+        self.multiplexer_menu.active = False
+
     def _move_up(self) -> None:
         """
         Move the cursor up.
@@ -196,3 +168,68 @@ class CursesPresenter(Presenter[Event, None]):
             self.file_menu.handle_event(Event.MOVE_DOWN)
         else:
             self.multiplexer_menu.handle_event(Event.MOVE_DOWN)
+
+    def _load_session(self) -> None:
+        """
+        Load the currently selected session.
+        """
+        session = self._get_session()
+        self.model.load_session(session)
+
+    def _create_session(self) -> None:
+        """
+        Create a new session.
+        """
+        name = self._get_new_name(
+            "Enter a name for the new session: ", "Error: no name provided"
+        )
+        if name:
+            self.model.create_session(name)
+
+    def _kill_session(self) -> None:
+        """
+        Kill the currently selected session.
+        """
+        session = self._get_session()
+        if self._confirm(f"Kill {session.name}? (y/N)", "Error: session not killed"):
+            self.model.kill_session(session)
+
+    def _save_session(self) -> None:
+        """
+        Save the currently selected session.
+        """
+        session = self._get_session()
+        if session in self.model.list_saved_sessions() and not self._confirm(
+            f"Overwrite {session.name}? (y/N)", "Error: session not saved"
+        ):
+            return
+        self.model.save_session(session)
+
+    def _delete_session(self) -> None:
+        """
+        Delete the currently selected session.
+        """
+        session = self._get_session()
+        if self._confirm(f"Delete {session.name}? (y/N)", "Error: session not deleted"):
+            self.model.delete_session(session)
+
+    def _rename_session(self) -> None:
+        """
+        Rename the currently selected session.
+        """
+        session = self._get_session()
+        if not self._confirm(f"Rename {session.name}? (y/N)", "Error: not renamed"):
+            return
+        new_name = self._get_new_name(
+            f"Enter a new name for {session.name}: ", "Error: no name provided"
+        )
+        if new_name:
+            self.model.rename_session(session, new_name)
+
+    def _invalid_command(self, command: Event) -> None:
+        """
+        Handle an invalid command.
+        """
+        self.command_bar.handle_event(
+            Event.SHOW_MESSAGE, f"Error: running command {command}"
+        )
