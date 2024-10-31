@@ -4,7 +4,7 @@ from src.data_models import Event, SessionLabel
 from src.interfaces import Model, Presenter, SessionHandler, View
 
 
-class MenuPresenter(Presenter[Optional[SessionLabel]]):
+class MenuPresenter(Presenter[Event, Optional[SessionLabel]]):
     def __init__(
         self, view: View, model: Model, session_handler: SessionHandler
     ) -> None:

@@ -4,14 +4,14 @@ from src.data_models import CursesStates, Event, SessionLabel
 from src.interfaces import Model, Presenter, View
 
 
-class CursesPresenter(Presenter[None]):
+class CursesPresenter(Presenter[Event, None]):
     def __init__(
         self,
         view: View,
         model: Model,
-        multiplexer_menu: Presenter[Optional[SessionLabel]],
-        file_menu: Presenter[Optional[SessionLabel]],
-        message_window: Presenter[Optional[Union[bool, str]]],
+        multiplexer_menu: Presenter[Event, Optional[SessionLabel]],
+        file_menu: Presenter[Event, Optional[SessionLabel]],
+        message_window: Presenter[Event, Optional[Union[bool, str]]],
     ) -> None:
         """
         Main presenter for the Curses GUI.
