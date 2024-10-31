@@ -4,7 +4,7 @@ from src.data_models import Event
 from src.interfaces import Model, Presenter, View
 
 
-class CommandBarPresenter(Presenter[Optional[Union[bool, str]]]):
+class CommandBarPresenter(Presenter[Event, Optional[Union[bool, str]]]):
     def __init__(self, view: View, model: Model) -> None:
         """
         Presenter for the message window.

@@ -1,14 +1,15 @@
 from abc import ABC, abstractmethod
-from typing import Any, Generic, Optional, TypeVar
+from enum import Enum
+from typing import Any, Generic, TypeVar
 
-from src.data_models import Event
 from src.interfaces.model import Model
 from src.interfaces.view import View
 
 ReturnType = TypeVar("ReturnType")
+EventType = TypeVar("EventType", bound=Enum)
 
 
-class Presenter(ABC, Generic[ReturnType]):
+class Presenter(ABC, Generic[EventType, ReturnType]):
     @abstractmethod
     def __init__(self, view: View, model: Model) -> None:
         """
@@ -34,14 +35,14 @@ class Presenter(ABC, Generic[ReturnType]):
         raise NotImplementedError
 
     @abstractmethod
-    def get_event(self) -> Event:
+    def get_event(self) -> EventType:
         """
         Get event from the view.
         """
         raise NotImplementedError
 
     @abstractmethod
-    def handle_event(self, event: Event, *args: Any) -> Optional[ReturnType]:
+    def handle_event(self, event: EventType, *args: Any) -> ReturnType:
         """
         Handle a given `event`.
         """

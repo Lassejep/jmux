@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class Keys(Enum):
+class Key(Enum):
     A = 65
     B = 66
     C = 67
