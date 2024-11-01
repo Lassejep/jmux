@@ -11,10 +11,8 @@ from .views import (CursesView, FileMenuRenderer, InputFieldRenderer,
 class CursesGui:
     def __init__(self, model: Model) -> None:
         self.jmux_model = model
-        self.running = False
 
     def run(self) -> None:
-        self.running = True
         curses.wrapper(self._setup)
 
     def _setup(self, stdscr: curses.window) -> None:
@@ -23,8 +21,8 @@ class CursesGui:
         self._setup_colors()
         self._create_views(stdscr)
         self._create_presenters()
-        self._populate_views()
-        self._main_loop()
+        self._inject_dependencies()
+        self.presenter.activate()
 
     def _setup_curses(self) -> None:
         curses.curs_set(0)
@@ -37,26 +35,17 @@ class CursesGui:
         curses.use_default_colors()
         curses.init_pair(1, curses.COLOR_RED, -1)
 
-    def _create_command_bar(self) -> None:
+    def _create_views(self, stdscr) -> None:
+        self.main_view = CursesView(stdscr)
         position = (self.screen_height - 2, 1)
         size = (1, self.screen_width - 3)
         self.command_bar_view = InputFieldRenderer(position, size)
-
-    def _create_multiplexer_view(self) -> None:
         position = (1, 1)
         size = (self.screen_height - 4, self.screen_width // 2 - 2)
         self.multiplexer_view = MultiplexerMenuRenderer(position, size)
-
-    def _create_file_view(self) -> None:
         position = (1, self.screen_width // 2 + 1)
         size = (self.screen_height - 4, self.screen_width // 2 - 2)
         self.file_view = FileMenuRenderer(position, size)
-
-    def _create_views(self, stdscr) -> None:
-        self.main_view = CursesView(stdscr)
-        self._create_command_bar()
-        self._create_multiplexer_view()
-        self._create_file_view()
 
     def _create_presenters(self) -> None:
         self.multiplexer_menu = MultiplexerMenuPresenter(
@@ -72,10 +61,7 @@ class CursesGui:
             self.command_bar,
         )
 
-    def _populate_views(self) -> None:
+    def _inject_dependencies(self) -> None:
         self.main_view.presenter = self.presenter
         self.multiplexer_view.presenter = self.multiplexer_menu
         self.file_view.presenter = self.file_menu
-
-    def _main_loop(self) -> None:
-        self.presenter.activate()
