@@ -177,58 +177,92 @@ class CursesPresenter(Presenter[Event, None]):
         """
         Load the currently selected session.
         """
-        session = self._get_session()
-        self.model.load_session(session)
+        try:
+            session = self._get_session()
+            self.model.load_session(session)
+        except ValueError:
+            self.command_bar.handle_event(
+                Event.SHOW_MESSAGE, "Error: Session not found"
+            )
 
     def _create_session(self) -> None:
         """
         Create a new session.
         """
-        name = self._get_new_name(
-            "Enter a name for the new session: ", "Error: no name provided"
-        )
-        if name:
-            self.model.create_session(name)
+        try:
+            name = self._get_new_name(
+                "Enter a name for the new session: ", "Error: no name provided"
+            )
+            if name:
+                self.model.create_session(name)
+        except ValueError:
+            self.command_bar.handle_event(
+                Event.SHOW_MESSAGE, "Error: Invalid session name"
+            )
 
     def _kill_session(self) -> None:
         """
         Kill the currently selected session.
         """
-        session = self._get_session()
-        if self._confirm(f"Kill {session.name}? (y/N)", "Error: session not killed"):
-            self.model.kill_session(session)
+        try:
+            session = self._get_session()
+            if self._confirm(
+                f"Kill {session.name}? (y/N)", "Error: session not killed"
+            ):
+                self.model.kill_session(session)
+        except ValueError:
+            self.command_bar.handle_event(
+                Event.SHOW_MESSAGE, "Error: Session not killed"
+            )
 
     def _save_session(self) -> None:
         """
         Save the currently selected session.
         """
-        session = self._get_session()
-        if session in self.model.list_saved_sessions() and not self._confirm(
-            f"Overwrite {session.name}? (y/N)", "Error: session not saved"
-        ):
-            return
-        self.model.save_session(session)
+        try:
+            session = self._get_session()
+            if session in self.model.list_saved_sessions() and not self._confirm(
+                f"Overwrite {session.name}? (y/N)", "Error: session not saved"
+            ):
+                return
+            self.model.save_session(session)
+        except ValueError:
+            self.command_bar.handle_event(
+                Event.SHOW_MESSAGE, "Error: Session not saved"
+            )
 
     def _delete_session(self) -> None:
         """
         Delete the currently selected session.
         """
-        session = self._get_session()
-        if self._confirm(f"Delete {session.name}? (y/N)", "Error: session not deleted"):
-            self.model.delete_session(session)
+        try:
+            session = self._get_session()
+            if self._confirm(
+                f"Delete {session.name}? (y/N)", "Error: session not deleted"
+            ):
+                self.model.delete_session(session)
+        except ValueError:
+            self.command_bar.handle_event(
+                Event.SHOW_MESSAGE, "Error: Session not deleted"
+            )
 
     def _rename_session(self) -> None:
         """
         Rename the currently selected session.
         """
-        session = self._get_session()
-        if not self._confirm(f"Rename {session.name}? (y/N)", "Error: not renamed"):
-            return
-        new_name = self._get_new_name(
-            f"Enter a new name for {session.name}: ", "Error: no name provided"
-        )
-        if new_name:
-            self.model.rename_session(session, new_name)
+        try:
+            session = self._get_session()
+            if not self._confirm(f"Rename {session.name}? (y/N)", "Error: not renamed"):
+                return
+            new_name = self._get_new_name(
+                f"Enter a new name for {session.name}: ", "Error: no name provided"
+            )
+            if new_name:
+                self.model.rename_session(session, new_name)
+        except ValueError:
+            self.command_bar.handle_event(
+                Event.SHOW_MESSAGE, "Error: Session not renamed"
+            )
 
     def _invalid_command(self, command: Event) -> None:
         """
