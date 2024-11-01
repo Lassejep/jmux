@@ -17,6 +17,9 @@ class InputFieldPresenter(Presenter[Event, Union[bool, str, None]]):
         self.cursor_pos = (0, 0)
         self.active = True
 
+    def deactivate(self) -> None:
+        self.active = False
+
     def update_view(self) -> None:
         self.view.render(self.text, self.cursor_pos)
 
@@ -31,7 +34,7 @@ class InputFieldPresenter(Presenter[Event, Union[bool, str, None]]):
                 self.activate()
                 self.view.render(args[0], (0, len(args[0])))
                 self.handle_key_press(self.view.get_event())
-                self.active = False
+                self.deactivate()
                 if self.text == "y":
                     return True
                 return False
@@ -55,9 +58,9 @@ class InputFieldPresenter(Presenter[Event, Union[bool, str, None]]):
                 pass
             case Key.ESC:
                 self.text = ""
-                self.active = False
+                self.deactivate()
             case Key.ENTER:
-                self.active = False
+                self.deactivate()
             case Key.BACKSPACE:
                 if self.cursor_pos[1] > 0:
                     if self.cursor_pos[1] < len(self.text):
