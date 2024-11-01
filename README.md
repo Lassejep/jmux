@@ -56,7 +56,7 @@ This will open a TUI where you can manage your tmux sessions.
 - [x] Add the ability to rename saved sessions
 - [x] Create a small TUI for the program
 - [x] Implement better input field in the TUI
-- [ ] Fix keybinds for the TUI
+- [x] Fix keybinds for the TUI
 - [ ] Add proper error handling to the TUI
 - [ ] Tmux Plugin Manager support
 - [ ] Implement scrolling in the TUI
