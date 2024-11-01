@@ -1,5 +1,0 @@
-#! /bin/bash
-
-script_dir=$(dirname "$(readlink -f "$0")")
-main_file=$script_dir/../main.py
-tmux display-popup -BEE $main_file
