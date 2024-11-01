@@ -2,8 +2,8 @@ import os
 
 import pytest
 
-from src.models import JmuxPane, JmuxSession, JmuxWindow, SessionLabel
-from src.services import TmuxClient
+from src.business_logic import TmuxClient
+from src.data_models import JmuxPane, JmuxSession, JmuxWindow, SessionLabel
 
 
 def list_sessions_out(number_of_sessions):

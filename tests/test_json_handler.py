@@ -3,8 +3,8 @@ from dataclasses import asdict
 
 import pytest
 
-from src.models import JmuxSession
-from src.services import JsonHandler
+from src.business_logic import JsonHandler
+from src.data_models import JmuxSession
 
 
 class TestConstructor:

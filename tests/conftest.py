@@ -2,8 +2,8 @@ from pathlib import Path
 
 import pytest
 
+from src.data_models import JmuxPane, JmuxSession, JmuxWindow, SessionLabel
 from src.interfaces import FileHandler, Model, Multiplexer, View
-from src.models import JmuxPane, JmuxSession, JmuxWindow, SessionLabel
 
 
 @pytest.fixture
