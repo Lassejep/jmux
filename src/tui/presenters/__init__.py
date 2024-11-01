@@ -1,9 +1,11 @@
 __all__ = [
     "CursesPresenter",
-    "MenuPresenter",
     "InputFieldPresenter",
+    "FileMenuPresenter",
+    "MultiplexerMenuPresenter",
 ]
 
 from .curses_presenter import CursesPresenter
+from .file_menu import FileMenuPresenter
 from .input_field import InputFieldPresenter
-from .menus import MenuPresenter
+from .multiplexer_menu import MultiplexerMenuPresenter

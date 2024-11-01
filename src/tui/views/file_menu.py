@@ -5,12 +5,11 @@ from src.data_models import Event
 from src.interfaces import Presenter, View
 
 
-class MenuRenderer(View[Event]):
+class FileMenuRenderer(View[Event]):
     def __init__(
         self,
         position: Tuple[int, int],
         size: Tuple[int, int],
-        title: str,
     ) -> None:
         """
         A window to show a menu.
@@ -18,7 +17,6 @@ class MenuRenderer(View[Event]):
         self.presenter: Presenter
         self.size = size
         self.position = position
-        self.title = title
         self.screen = curses.newpad(*size)
         self.screen.keypad(True)
         self.menu_offset = 1
@@ -44,9 +42,8 @@ class MenuRenderer(View[Event]):
             ord("l"): Event.MOVE_RIGHT,
             ord("o"): Event.CREATE_SESSION,
             ord("r"): Event.RENAME_SESSION,
-            ord("d"): Event.DELETE_SESSION,
             ord("s"): Event.SAVE_SESSION,
-            ord("x"): Event.KILL_SESSION,
+            ord("d"): Event.DELETE_SESSION,
             curses.KEY_ENTER: Event.LOAD_SESSION,
             10: Event.LOAD_SESSION,
         }.get(key, Event.UNKNOWN)
@@ -56,7 +53,7 @@ class MenuRenderer(View[Event]):
         Render the menu.
         """
         self._clear()
-        self.screen.addstr(0, 0, self.title, curses.A_BOLD)
+        self.screen.addstr(0, 0, "Choose a session:", curses.A_BOLD)
         for item_index, item in enumerate(items):
             self.screen.addstr(item_index + self.menu_offset, 0, item)
         if active:

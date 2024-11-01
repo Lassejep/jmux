@@ -1,21 +1,19 @@
-from typing import Any, Optional
+from typing import Any, List, Optional
 
 from src.data_models import Event, SessionLabel
-from src.interfaces import Model, Presenter, SessionHandler, View
+from src.interfaces import Model, Presenter, View
 
 
-class MenuPresenter(Presenter[Event, Optional[SessionLabel]]):
-    def __init__(
-        self, view: View[Event], model: Model, session_handler: SessionHandler
-    ) -> None:
+class FileMenuPresenter(Presenter[Optional[SessionLabel]]):
+    def __init__(self, view: View[Event], model: Model) -> None:
         """
         Presenter for Menus.
         """
         self.view: View[Event] = view
         self.model: Model = model
-        self.session_handler: SessionHandler = session_handler
         self.cursor_position: int = 0
         self.active: bool = False
+        self.sessions: List[SessionLabel] = self.model.list_saved_sessions()
 
     def activate(self) -> None:
         """
@@ -33,13 +31,28 @@ class MenuPresenter(Presenter[Event, Optional[SessionLabel]]):
         """
         Get data from the model and update the view.
         """
-        self.sessions = self.session_handler.update_sessions()
+        self.sessions = self.model.list_saved_sessions()
         self._check_cursor_position()
+        annotated_sessions = [
+            self._annotate_session(index, session)
+            for index, session in enumerate(self.sessions)
+        ]
         self.view.render(
-            self.session_handler.get_annotated_sessions(),
+            annotated_sessions,
             self.cursor_position,
             self.active,
         )
+
+    def _annotate_session(self, index: int, session: SessionLabel) -> str:
+        name = f"{index + 1}. {session.name}"
+        if session == self.model.get_active_session():
+            name += "*"
+        if (
+            session in self.model.list_running_sessions()
+            and session in self.model.list_saved_sessions()
+        ):
+            name += " (running)"
+        return name
 
     def get_event(self) -> Event:
         """
@@ -57,7 +70,7 @@ class MenuPresenter(Presenter[Event, Optional[SessionLabel]]):
             case Event.MOVE_DOWN:
                 self._cursor_down()
             case Event.GET_SESSION:
-                return self.session_handler.sessions[self.cursor_position]
+                return self.sessions[self.cursor_position]
         return None
 
     def _cursor_up(self) -> None:
