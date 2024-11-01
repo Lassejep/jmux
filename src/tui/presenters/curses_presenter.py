@@ -1,4 +1,4 @@
-from typing import Any, Optional, Union
+from typing import Optional, Union
 
 from src.data_models import CursesStates, Event, SessionLabel
 from src.interfaces import Model, Presenter, View
@@ -70,7 +70,7 @@ class CursesPresenter(Presenter[None]):
             case _:
                 return Event.EXIT
 
-    def handle_event(self, event: Event, *args: Any) -> None:
+    def handle_event(self, event: Event) -> None:
         """
         Handle a given `event`.
         """
@@ -122,7 +122,9 @@ class CursesPresenter(Presenter[None]):
         if not isinstance(confirmation, bool):
             raise ValueError("No confirmation provided")
         if not confirmation:
-            self.command_bar.handle_event(Event.SHOW_MESSAGE, error_message)
+            self.command_bar.handle_event(
+                Event.SHOW_MESSAGE, error_message, is_error=True
+            )
         return confirmation
 
     def _get_new_name(self, prompt: str, error_message: str) -> str:
@@ -131,7 +133,9 @@ class CursesPresenter(Presenter[None]):
         """
         new_name = self.command_bar.handle_event(Event.INPUT, prompt)
         if not new_name:
-            self.command_bar.handle_event(Event.SHOW_MESSAGE, error_message)
+            self.command_bar.handle_event(
+                Event.SHOW_MESSAGE, error_message, is_error=True
+            )
             return ""
         if not isinstance(new_name, str):
             raise ValueError("No name provided")
@@ -180,7 +184,7 @@ class CursesPresenter(Presenter[None]):
             self.model.load_session(session)
         except ValueError:
             self.command_bar.handle_event(
-                Event.SHOW_MESSAGE, "Error: Session not found"
+                Event.SHOW_MESSAGE, "Error: Session not found", is_error=True
             )
 
     def _create_session(self) -> None:
@@ -195,7 +199,7 @@ class CursesPresenter(Presenter[None]):
                 self.model.create_session(name)
         except ValueError:
             self.command_bar.handle_event(
-                Event.SHOW_MESSAGE, "Error: Invalid session name"
+                Event.SHOW_MESSAGE, "Error: Invalid session name", is_error=True
             )
 
     def _kill_session(self) -> None:
@@ -210,7 +214,7 @@ class CursesPresenter(Presenter[None]):
                 self.model.kill_session(session)
         except ValueError:
             self.command_bar.handle_event(
-                Event.SHOW_MESSAGE, "Error: Session not killed"
+                Event.SHOW_MESSAGE, "Error: Session not killed", is_error=True
             )
 
     def _save_session(self) -> None:
@@ -226,7 +230,7 @@ class CursesPresenter(Presenter[None]):
             self.model.save_session(session)
         except ValueError:
             self.command_bar.handle_event(
-                Event.SHOW_MESSAGE, "Error: Session not saved"
+                Event.SHOW_MESSAGE, "Error: Session not saved", is_error=True
             )
 
     def _delete_session(self) -> None:
@@ -241,7 +245,7 @@ class CursesPresenter(Presenter[None]):
                 self.model.delete_session(session)
         except ValueError:
             self.command_bar.handle_event(
-                Event.SHOW_MESSAGE, "Error: Session not deleted"
+                Event.SHOW_MESSAGE, "Error: Session not deleted", is_error=True
             )
 
     def _rename_session(self) -> None:
@@ -259,7 +263,7 @@ class CursesPresenter(Presenter[None]):
                 self.model.rename_session(session, new_name)
         except ValueError:
             self.command_bar.handle_event(
-                Event.SHOW_MESSAGE, "Error: Session not renamed"
+                Event.SHOW_MESSAGE, "Error: Session not renamed", is_error=True
             )
 
     def _invalid_command(self, command: Event) -> None:
@@ -267,5 +271,5 @@ class CursesPresenter(Presenter[None]):
         Handle an invalid command.
         """
         self.command_bar.handle_event(
-            Event.SHOW_MESSAGE, f"Error: running command {command}"
+            Event.SHOW_MESSAGE, f"Error: running command {command}", is_error=True
         )

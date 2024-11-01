@@ -1,4 +1,4 @@
-from typing import Any, List, Optional
+from typing import List, Optional
 
 from src.data_models import Event, SessionLabel
 from src.interfaces import Model, Presenter, View
@@ -60,7 +60,7 @@ class MultiplexerMenuPresenter(Presenter[Optional[SessionLabel]]):
         """
         return self.view.get_event()
 
-    def handle_event(self, event: Event, *args: Any) -> Optional[SessionLabel]:
+    def handle_event(self, event: Event) -> Optional[SessionLabel]:
         """
         Handle a given `event`.
         """

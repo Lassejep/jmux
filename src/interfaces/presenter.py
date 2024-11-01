@@ -48,7 +48,7 @@ class Presenter(ABC, Generic[ReturnType]):
         raise NotImplementedError
 
     @abstractmethod
-    def handle_event(self, event: Event, *args: Any) -> ReturnType:
+    def handle_event(self, event: Event, *args: Any, **kwargs: Any) -> ReturnType:
         """
         Handle a given `event`.
         """
