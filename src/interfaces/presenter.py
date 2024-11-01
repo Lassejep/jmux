@@ -28,6 +28,13 @@ class Presenter(ABC, Generic[EventType, ReturnType]):
         raise NotImplementedError
 
     @abstractmethod
+    def deactivate(self) -> None:
+        """
+        Deactivate the presenter.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
     def update_view(self) -> None:
         """
         Get data from the model and update the view.

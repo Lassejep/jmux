@@ -23,6 +23,12 @@ class MenuPresenter(Presenter[Event, Optional[SessionLabel]]):
         """
         self.active = True
 
+    def deactivate(self) -> None:
+        """
+        Deactivate the presenter.
+        """
+        self.active = False
+
     def update_view(self) -> None:
         """
         Get data from the model and update the view.
