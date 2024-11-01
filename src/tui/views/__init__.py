@@ -1,5 +1,11 @@
-__all__ = ["CursesView", "MenuRenderer", "InputFieldRenderer"]
+__all__ = [
+    "CursesView",
+    "InputFieldRenderer",
+    "MultiplexerMenuRenderer",
+    "FileMenuRenderer",
+]
 
 from .curses_view import CursesView
+from .file_menu import FileMenuRenderer
 from .input_field import InputFieldRenderer
-from .menus import MenuRenderer
+from .multiplexer_menu import MultiplexerMenuRenderer

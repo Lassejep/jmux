@@ -4,7 +4,7 @@ from src.data_models import Event, Key
 from src.interfaces import Model, Presenter, View
 
 
-class InputFieldPresenter(Presenter[Event, Union[bool, str, None]]):
+class InputFieldPresenter(Presenter[Union[bool, str, None]]):
     def __init__(self, view: View[Key], model: Model) -> None:
         self.view: View[Key] = view
         self.model: Model = model

@@ -4,25 +4,23 @@ from src.data_models import CursesStates, Event, SessionLabel
 from src.interfaces import Model, Presenter, View
 
 
-class CursesPresenter(Presenter[Event, None]):
+class CursesPresenter(Presenter[None]):
     def __init__(
         self,
         view: View[Event],
         model: Model,
-        multiplexer_menu: Presenter[Event, Optional[SessionLabel]],
-        file_menu: Presenter[Event, Optional[SessionLabel]],
-        command_bar: Presenter[Event, Union[bool, str, None]],
+        multiplexer_menu: Presenter[Optional[SessionLabel]],
+        file_menu: Presenter[Optional[SessionLabel]],
+        command_bar: Presenter[Union[bool, str, None]],
     ) -> None:
         """
         Main presenter for the Curses GUI.
         """
         self.view: View[Event] = view
         self.model: Model = model
-        self.multiplexer_menu: Presenter[Event, Optional[SessionLabel]] = (
-            multiplexer_menu
-        )
-        self.file_menu: Presenter[Event, Optional[SessionLabel]] = file_menu
-        self.command_bar: Presenter[Event, Union[bool, str, None]] = command_bar
+        self.multiplexer_menu: Presenter[Optional[SessionLabel]] = multiplexer_menu
+        self.file_menu: Presenter[Optional[SessionLabel]] = file_menu
+        self.command_bar: Presenter[Union[bool, str, None]] = command_bar
         self.active: bool = False
         self.state: CursesStates = CursesStates.MULTIPLEXER_MENU
         self._render_starting_screen()

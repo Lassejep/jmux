@@ -9,7 +9,7 @@ class CursesView(View[Event]):
         """
         A Curses GUI that implements the View interface.
         """
-        self.presenter: Presenter[Event, None]
+        self.presenter: Presenter[None]
         self.window: curses.window = window
         self.window_size = self.window.getmaxyx()
         self.window.keypad(True)

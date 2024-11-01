@@ -2,9 +2,10 @@ import curses
 
 from src.interfaces import Model
 
-from .presenters import CursesPresenter, InputFieldPresenter, MenuPresenter
-from .session_handlers import FileSessions, MultiplexerSessions
-from .views import CursesView, InputFieldRenderer, MenuRenderer
+from .presenters import (CursesPresenter, FileMenuPresenter,
+                         InputFieldPresenter, MultiplexerMenuPresenter)
+from .views import (CursesView, FileMenuRenderer, InputFieldRenderer,
+                    MultiplexerMenuRenderer)
 
 
 class CursesGui:
@@ -44,12 +45,12 @@ class CursesGui:
     def _create_multiplexer_view(self) -> None:
         position = (1, 1)
         size = (self.screen_height - 4, self.screen_width // 2 - 2)
-        self.multiplexer_view = MenuRenderer(position, size, "Running Sessions:")
+        self.multiplexer_view = MultiplexerMenuRenderer(position, size)
 
     def _create_file_view(self) -> None:
         position = (1, self.screen_width // 2 + 1)
         size = (self.screen_height - 4, self.screen_width // 2 - 2)
-        self.file_view = MenuRenderer(position, size, "Saved Sessions:")
+        self.file_view = FileMenuRenderer(position, size)
 
     def _create_views(self, stdscr) -> None:
         self.main_view = CursesView(stdscr)
@@ -58,14 +59,10 @@ class CursesGui:
         self._create_file_view()
 
     def _create_presenters(self) -> None:
-        self.multiplexer_menu = MenuPresenter(
-            self.multiplexer_view,
-            self.jmux_model,
-            MultiplexerSessions(self.jmux_model),
+        self.multiplexer_menu = MultiplexerMenuPresenter(
+            self.multiplexer_view, self.jmux_model
         )
-        self.file_menu = MenuPresenter(
-            self.file_view, self.jmux_model, FileSessions(self.jmux_model)
-        )
+        self.file_menu = FileMenuPresenter(self.file_view, self.jmux_model)
         self.command_bar = InputFieldPresenter(self.command_bar_view, self.jmux_model)
         self.presenter = CursesPresenter(
             self.main_view,
