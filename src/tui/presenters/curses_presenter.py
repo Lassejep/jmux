@@ -43,8 +43,12 @@ class CursesPresenter(Presenter[Event, None]):
             self.update_view()
             event = self.get_event()
             self.handle_event(event)
-            if self.state == CursesStates.EXIT:
-                self.active = False
+
+    def deactivate(self) -> None:
+        """
+        Deactivate the presenter.
+        """
+        self.active = False
 
     def update_view(self) -> None:
         """
@@ -74,7 +78,7 @@ class CursesPresenter(Presenter[Event, None]):
         """
         match event:
             case Event.EXIT:
-                self.state = CursesStates.EXIT
+                self.deactivate()
             case Event.MOVE_LEFT:
                 self._move_left()
             case Event.MOVE_RIGHT:
@@ -141,7 +145,7 @@ class CursesPresenter(Presenter[Event, None]):
         """
         self.state = CursesStates.MULTIPLEXER_MENU
         self.multiplexer_menu.activate()
-        self.file_menu.active = False
+        self.file_menu.deactivate()
 
     def _move_right(self) -> None:
         """
@@ -149,7 +153,7 @@ class CursesPresenter(Presenter[Event, None]):
         """
         self.state = CursesStates.FILE_MENU
         self.file_menu.activate()
-        self.multiplexer_menu.active = False
+        self.multiplexer_menu.deactivate()
 
     def _move_up(self) -> None:
         """
