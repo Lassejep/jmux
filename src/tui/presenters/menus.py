@@ -34,6 +34,7 @@ class MenuPresenter(Presenter[Event, Optional[SessionLabel]]):
         Get data from the model and update the view.
         """
         self.sessions = self.session_handler.update_sessions()
+        self._check_cursor_position()
         self.view.render(
             self.session_handler.get_annotated_sessions(),
             self.cursor_position,
@@ -60,13 +61,15 @@ class MenuPresenter(Presenter[Event, Optional[SessionLabel]]):
         return None
 
     def _cursor_up(self) -> None:
-        if self.cursor_position > 0:
-            self.cursor_position -= 1
-        else:
-            self.cursor_position = 0
+        self.cursor_position -= 1
+        self._check_cursor_position()
 
     def _cursor_down(self) -> None:
-        if self.cursor_position < len(self.sessions) - 1:
-            self.cursor_position += 1
-        else:
+        self.cursor_position += 1
+        self._check_cursor_position()
+
+    def _check_cursor_position(self) -> None:
+        if self.cursor_position < 0:
+            self.cursor_position = 0
+        elif self.cursor_position >= len(self.sessions):
             self.cursor_position = len(self.sessions) - 1
