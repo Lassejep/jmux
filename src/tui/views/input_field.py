@@ -21,9 +21,14 @@ class InputFieldRenderer(View[Key]):
         curses.curs_set(0)
         return key
 
-    def render(self, text: str, cursor_position: Tuple[int, int]) -> None:
+    def render(
+        self, text: str, cursor_position: Tuple[int, int], is_error: bool = False
+    ) -> None:
         self._clear()
-        self.text_field.addstr(0, 0, text)
+        if is_error:
+            self.text_field.addstr(0, 0, text, curses.A_BOLD | curses.color_pair(1))
+        else:
+            self.text_field.addstr(0, 0, text)
         self.text_field.move(*cursor_position)
         self._refresh()
 

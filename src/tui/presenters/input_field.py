@@ -21,7 +21,7 @@ class InputFieldPresenter(Presenter[Event, Union[bool, str, None]]):
         self.active = False
 
     def update_view(self) -> None:
-        self.view.render(self.text, self.cursor_pos)
+        pass
 
     def get_event(self) -> Event:
         return Event.NOOP
@@ -30,6 +30,8 @@ class InputFieldPresenter(Presenter[Event, Union[bool, str, None]]):
         match event:
             case Event.SHOW_MESSAGE:
                 self.view.render(args[0], (0, 0))
+                if args[0].startswith("Error:"):
+                    self.view.render(args[0], (0, 0), is_error=True)
             case Event.CONFIRM:
                 self.activate()
                 self.view.render(args[0], (0, len(args[0])))
