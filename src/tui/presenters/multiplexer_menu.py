@@ -82,7 +82,7 @@ class MultiplexerMenuPresenter(Presenter[Optional[SessionLabel]]):
         self._check_cursor_position()
 
     def _check_cursor_position(self) -> None:
+        if self.cursor_position >= len(self.sessions):
+            self.cursor_position = len(self.sessions) - 1
         if self.cursor_position < 0:
             self.cursor_position = 0
-        elif self.cursor_position >= len(self.sessions):
-            self.cursor_position = len(self.sessions) - 1
