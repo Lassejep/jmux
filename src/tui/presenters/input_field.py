@@ -18,6 +18,8 @@ class InputFieldPresenter(Presenter[Union[bool, str, None]]):
         self.active = True
 
     def deactivate(self) -> None:
+        self.text = ""
+        self.cursor_pos = (0, 0)
         self.active = False
 
     def update_view(self) -> None:
@@ -31,38 +33,47 @@ class InputFieldPresenter(Presenter[Union[bool, str, None]]):
     ) -> Union[bool, str, None]:
         match event:
             case Event.SHOW_MESSAGE:
-                self.view.render(args[0], (0, 0), is_error=is_error)
+                self._show_message(args[0], is_error)
             case Event.CONFIRM:
-                self.activate()
-                self.view.render(args[0], (0, len(args[0])))
-                self.handle_key_press(self.view.get_event())
+                confirmation = self._confirm(args[0])
                 self.deactivate()
-                if self.text == "y":
-                    return True
-                return False
+                return confirmation
             case Event.INPUT:
-                self.activate()
-                while self.active:
-                    self.view.render(
-                        args[0] + self.text,
-                        (self.cursor_pos[0], len(args[0]) + self.cursor_pos[1]),
-                    )
-                    self.handle_key_press(self.view.get_event())
-                if self.text:
-                    return self.text
-            case _:
-                pass
+                output = self._input(args[0])
+                self.deactivate()
+                if output:
+                    return output
         return None
 
-    def handle_key_press(self, key: Key) -> None:
+    def _show_message(self, message: str, is_error: bool = False) -> None:
+        self.view.render(message, (0, 0), is_error=is_error)
+
+    def _confirm(self, confirmation_prompt: str) -> bool:
+        self.activate()
+        self.view.render(confirmation_prompt, (0, len(confirmation_prompt)))
+        self._handle_key_press(self.view.get_event())
+        if self.text == "y" or self.text == "Y":
+            return True
+        return False
+
+    def _input(self, prompt: str) -> str:
+        self.activate()
+        while self.active:
+            self.view.render(
+                prompt + self.text,
+                (self.cursor_pos[0], len(prompt) + self.cursor_pos[1]),
+            )
+            self._handle_key_press(self.view.get_event())
+        return self.text
+
+    def _handle_key_press(self, key: Key) -> None:
         match key:
             case Key.UNKNOWN:
                 pass
             case Key.ESC:
-                self.text = ""
                 self.deactivate()
             case Key.ENTER:
-                self.deactivate()
+                self.active = False
             case Key.BACKSPACE:
                 if self.cursor_pos[1] > 0:
                     if self.cursor_pos[1] < len(self.text):
