@@ -65,8 +65,6 @@ class CursesPresenter(Presenter[None]):
                 return self.multiplexer_menu.get_event()
             case CursesStates.FILE_MENU:
                 return self.file_menu.get_event()
-            case CursesStates.MESSAGE_WINDOW:
-                return self.command_bar.get_event()
             case _:
                 return Event.EXIT
 
