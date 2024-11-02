@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from src.data_models import JmuxPane, JmuxSession, JmuxWindow, SessionLabel
-from src.interfaces import FileHandler, Model, Multiplexer, View
+from src.interfaces import FileHandler, Model, Multiplexer, Presenter, View
 
 
 @pytest.fixture
@@ -36,6 +36,11 @@ def mock_subprocess(mocker):
 
     subprocess_run.set_side_effects = set_side_effects
     return subprocess_run
+
+
+@pytest.fixture
+def mock_presenter(mocker):
+    yield mocker.Mock(spec=Presenter)
 
 
 @pytest.fixture
