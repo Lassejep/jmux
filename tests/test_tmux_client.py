@@ -46,6 +46,7 @@ class TestListSessions:
         self.mocker = mocker
         self.multiplexer = TmuxClient()
         self.multiplexer._bin = "/usr/bin/tmux"
+        self.mocker.patch.object(self.multiplexer, "is_running", return_value=True)
 
     def test_returns_list(self):
         assert isinstance(self.multiplexer.list_sessions(), list)
@@ -70,7 +71,7 @@ class TestListSessions:
         assert session.name == "default"
 
     def test_with_no_tmux_session_returns_empty_list(self):
-        self.mocker.patch.object(TmuxClient, "is_running", return_value=False)
+        self.mocker.patch.object(self.multiplexer, "is_running", return_value=False)
         assert self.multiplexer.list_sessions() == []
 
     def test_with_two_sessions_returns_list_with_two_elements(self):
@@ -86,6 +87,7 @@ class TestGetSession:
         self.labels = session_labels
         self.multiplexer = TmuxClient()
         self.multiplexer._bin = "/usr/bin/tmux"
+        self.mocker.patch.object(self.multiplexer, "is_running", return_value=True)
 
     def test_nonexistent_session_id_raises_ValueError(self):
         self.subprocess.set_side_effects(list_sessions_out(1))
@@ -192,7 +194,7 @@ class TestCreateSession:
         self.mocker = mocker
         self.multiplexer = TmuxClient()
         self.multiplexer._bin = "/usr/bin/tmux"
-        self.mocker.patch.object(TmuxClient, "is_running", return_value=True)
+        self.mocker.patch.object(self.multiplexer, "is_running", return_value=True)
 
     def test_session_with_no_windows_throws_ValueError(self):
         with pytest.raises(ValueError):
@@ -312,10 +314,10 @@ class TestGetCurrentSessionId:
         self.mocker = mocker
         self.multiplexer = TmuxClient()
         self.multiplexer._bin = "/usr/bin/tmux"
-        self.mocker.patch.object(TmuxClient, "is_running", return_value=True)
+        self.mocker.patch.object(self.multiplexer, "is_running", return_value=True)
 
     def test_raises_ValueError_if_no_session_is_running(self):
-        self.mocker.patch.object(TmuxClient, "is_running", return_value=False)
+        self.mocker.patch.object(self.multiplexer, "is_running", return_value=False)
         with pytest.raises(ValueError):
             self.multiplexer.get_current_session_label()
 
@@ -339,16 +341,16 @@ class TestKillSession:
         self.multiplexer = TmuxClient()
         self.multiplexer._bin = "/usr/bin/tmux"
         self.mocker.patch.object(
-            TmuxClient, "list_sessions", return_value=[self.labels[0]]
+            self.multiplexer, "list_sessions", return_value=[self.labels[0]]
         )
         self.mocker.patch.object(
-            TmuxClient,
+            self.multiplexer,
             "get_current_session_label",
             return_value=self.labels[1],
         )
 
     def test_raises_ValueError_if_session_id_does_not_exist(self):
-        self.mocker.patch.object(TmuxClient, "list_sessions", return_value=[])
+        self.mocker.patch.object(self.multiplexer, "list_sessions", return_value=[])
         with pytest.raises(ValueError):
             self.multiplexer.kill_session(self.labels[0])
 
@@ -369,11 +371,11 @@ class TestRenameSession:
         self.multiplexer = TmuxClient()
         self.multiplexer._bin = "/usr/bin/tmux"
         self.mocker.patch.object(
-            TmuxClient, "list_sessions", return_value=[self.labels[0]]
+            self.multiplexer, "list_sessions", return_value=[self.labels[0]]
         )
 
     def test_raises_ValueError_if_session_id_does_not_exist(self):
-        self.mocker.patch.object(TmuxClient, "list_sessions", return_value=[])
+        self.mocker.patch.object(self.multiplexer, "list_sessions", return_value=[])
         with pytest.raises(ValueError):
             self.multiplexer.rename_session(self.labels[0], "new_name")
 
@@ -404,11 +406,11 @@ class FocusSession:
         self.multiplexer = TmuxClient()
         self.multiplexer._bin = "/usr/bin/tmux"
         self.mocker.patch.object(
-            TmuxClient, "list_sessions", return_value=[self.labels[0]]
+            self.multiplexer, "list_sessions", return_value=[self.labels[0]]
         )
 
     def test_raises_ValueError_if_session_id_does_not_exist(self):
-        self.mocker.patch.object(TmuxClient, "list_sessions", return_value=[])
+        self.mocker.patch.object(self.multiplexer, "list_sessions", return_value=[])
         with pytest.raises(ValueError):
             self.multiplexer.focus_session(self.labels[0])
 
