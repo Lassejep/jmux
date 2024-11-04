@@ -96,24 +96,29 @@ class TmuxClient(Multiplexer):
         """
         Create a new session in tmux with the data in `session`.
         """
-        command = [
-            self._bin,
-            "new-session",
-            "-ds",
-            session.name,
-            "-PF",
-            "#{session_id}",
-        ]
-        response = subprocess.run(command, capture_output=True, text=True, check=True)
-        session.id = response.stdout.strip()
-        if len(session.windows) == 0:
-            raise ValueError("Session must have at least one window")
-        for window in session.windows:
-            self._create_window(session.id, window)
-        command = [self._bin, "kill-window", "-t", f"{session.id}:1"]
-        subprocess.run(command, check=True)
-        command = [self._bin, "switch-client", "-t", session.id]
-        subprocess.run(command, check=True)
+        try:
+            command = [
+                self._bin,
+                "new-session",
+                "-ds",
+                session.name,
+                "-PF",
+                "#{session_id}",
+            ]
+            response = subprocess.run(
+                command, capture_output=True, text=True, check=True
+            )
+            session.id = response.stdout.strip()
+            if len(session.windows) == 0:
+                raise ValueError("Session must have at least one window")
+            for window in session.windows:
+                self._create_window(session.id, window)
+            command = [self._bin, "kill-window", "-t", f"{session.id}:1"]
+            subprocess.run(command, check=True)
+            command = [self._bin, "switch-client", "-t", session.id]
+            subprocess.run(command, check=True)
+        except subprocess.CalledProcessError as error:
+            raise ValueError(error.stderr) from error
 
     def _create_window(self, session_id: str, window: JmuxWindow) -> None:
         command = [
@@ -189,10 +194,13 @@ class TmuxClient(Multiplexer):
         """
         Create a new tmux session with the name `session_name`.
         """
-        command = [self._bin, "new-session", "-ds", session_name]
-        subprocess.run(command, check=True)
-        command = [self._bin, "switch-client", "-t", session_name]
-        subprocess.run(command, check=True)
+        try:
+            command = [self._bin, "new-session", "-ds", session_name]
+            subprocess.run(command, check=True)
+            command = [self._bin, "switch-client", "-t", session_name]
+            subprocess.run(command, check=True)
+        except subprocess.CalledProcessError as error:
+            raise ValueError("Session already exists") from error
 
     def focus_session(self, label: SessionLabel) -> None:
         """

@@ -79,7 +79,7 @@ This will open a TUI where you can manage your tmux sessions.
 - [x] Tmux Plugin Manager support
 - [x] Add better tests for the curses presenter class
 - [x] Remove the presenter deactivate method
-- [ ] Add proper error handling to the TUI
+- [x] Add proper error handling to the TUI
 - [ ] Fix color scheme for the TUI
 - [ ] Implement scrolling in the TUI
 - [ ] Fix bug where the program doesn't work if tmux indexing doesn't start at 1
