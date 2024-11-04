@@ -794,7 +794,9 @@ class TestHandleUnknownEvent:
 
 
 class TestHandleInvalidEvent:
-    def test_shows_error_message_in_command_bar(self, mock_view, mock_model, mock_presenter):
+    def test_shows_error_message_in_command_bar(
+        self, mock_view, mock_model, mock_presenter
+    ):
         presenter = CursesPresenter(
             mock_view, mock_model, mock_presenter, mock_presenter, mock_presenter
         )
