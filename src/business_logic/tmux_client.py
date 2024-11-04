@@ -15,11 +15,18 @@ class TmuxClient(Multiplexer):
         self._bin = self._get_binary()
         if not self._bin:
             raise FileNotFoundError("Tmux binary not found")
+        self.base_index = self._get_base_index()
 
     def _get_binary(self) -> str:
         command = ["which", "tmux"]
         response = subprocess.run(command, capture_output=True, text=True, check=True)
         return response.stdout.strip()
+
+    def _get_base_index(self) -> int:
+        command = [self._bin, "show-options", "-g", "base-index"]
+        response = subprocess.run(command, capture_output=True, text=True, check=True)
+        base_index = response.stdout.strip().split(" ")[1]
+        return int(base_index)
 
     def is_running(self) -> bool:
         """
@@ -113,7 +120,12 @@ class TmuxClient(Multiplexer):
                 raise ValueError("Session must have at least one window")
             for window in session.windows:
                 self._create_window(session.id, window)
-            command = [self._bin, "kill-window", "-t", f"{session.id}:1"]
+            command = [
+                self._bin,
+                "kill-window",
+                "-t",
+                f"{session.id}:{self.base_index}",
+            ]
             subprocess.run(command, check=True)
             command = [self._bin, "switch-client", "-t", session.id]
             subprocess.run(command, check=True)
@@ -139,7 +151,7 @@ class TmuxClient(Multiplexer):
             raise ValueError("Window must have at least one pane")
         for pane in window.panes:
             self._create_pane(window.id, pane)
-        command = [self._bin, "kill-pane", "-t", f"{window.id}.1"]
+        command = [self._bin, "kill-pane", "-t", f"{window.id}.{self.base_index}"]
         subprocess.run(command, check=True)
         command = [self._bin, "select-layout", "-t", window.id, window.layout]
         subprocess.run(command, check=True)
