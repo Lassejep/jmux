@@ -80,9 +80,9 @@ This will open a TUI where you can manage your tmux sessions.
 - [x] Add better tests for the curses presenter class
 - [x] Remove the presenter deactivate method
 - [x] Add proper error handling to the TUI
-- [ ] Fix color scheme for the TUI
-- [ ] Implement scrolling in the TUI
+- [x] Implement scrolling in the TUI
 - [ ] Fix bug where the program doesn't work if tmux indexing doesn't start at 1
+- [ ] Fix color scheme for the TUI (this might just be a tmux issue on my end)
 - [ ] Make panes remember their running processes and restart them when loading a session
 - [ ] Make panes remember their command history
 

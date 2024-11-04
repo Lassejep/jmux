@@ -41,10 +41,10 @@ class CursesGui:
         size = (1, self.screen_width - 3)
         self.command_bar_view = InputFieldRenderer(position, size)
         position = (1, 1)
-        size = (self.screen_height - 4, self.screen_width // 2 - 2)
+        size = (self.screen_height - 5, self.screen_width // 2 - 2)
         self.multiplexer_view = MultiplexerMenuRenderer(position, size)
         position = (1, self.screen_width // 2 + 1)
-        size = (self.screen_height - 4, self.screen_width // 2 - 2)
+        size = (self.screen_height - 5, self.screen_width // 2 - 3)
         self.file_view = FileMenuRenderer(position, size)
 
     def _create_presenters(self) -> None:
