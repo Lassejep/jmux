@@ -65,8 +65,7 @@ class CursesPresenter(Presenter[None]):
                 return self.multiplexer_menu.get_event()
             case CursesStates.FILE_MENU:
                 return self.file_menu.get_event()
-            case _:
-                return Event.EXIT
+        return Event.EXIT
 
     def handle_event(self, event: Event) -> None:
         """
@@ -117,12 +116,11 @@ class CursesPresenter(Presenter[None]):
         Get a confirmation from the user.
         """
         confirmation = self.command_bar.handle_event(Event.CONFIRM, prompt)
-        if not isinstance(confirmation, bool):
-            raise ValueError("No confirmation provided")
-        if not confirmation:
+        if not isinstance(confirmation, bool) or not confirmation:
             self.command_bar.handle_event(
                 Event.SHOW_MESSAGE, error_message, is_error=True
             )
+            return False
         return confirmation
 
     def _get_new_name(self, prompt: str, error_message: str) -> str:
@@ -130,13 +128,11 @@ class CursesPresenter(Presenter[None]):
         Get a new name for a session.
         """
         new_name = self.command_bar.handle_event(Event.INPUT, prompt)
-        if not new_name:
+        if not isinstance(new_name, str) or not new_name:
             self.command_bar.handle_event(
                 Event.SHOW_MESSAGE, error_message, is_error=True
             )
             return ""
-        if not isinstance(new_name, str):
-            raise ValueError("No name provided")
         return new_name
 
     def _move_left(self) -> None:
@@ -180,10 +176,8 @@ class CursesPresenter(Presenter[None]):
         try:
             session = self._get_session()
             self.model.load_session(session)
-        except ValueError:
-            self.command_bar.handle_event(
-                Event.SHOW_MESSAGE, "Error: Session not found", is_error=True
-            )
+        except ValueError as error:
+            self.command_bar.handle_event(Event.SHOW_MESSAGE, str(error), is_error=True)
 
     def _create_session(self) -> None:
         """
@@ -195,10 +189,8 @@ class CursesPresenter(Presenter[None]):
             )
             if name:
                 self.model.create_session(name)
-        except ValueError:
-            self.command_bar.handle_event(
-                Event.SHOW_MESSAGE, "Error: Invalid session name", is_error=True
-            )
+        except ValueError as error:
+            self.command_bar.handle_event(Event.SHOW_MESSAGE, str(error), is_error=True)
 
     def _kill_session(self) -> None:
         """
@@ -210,10 +202,8 @@ class CursesPresenter(Presenter[None]):
                 f"Kill {session.name}? (y/N)", "Error: session not killed"
             ):
                 self.model.kill_session(session)
-        except ValueError:
-            self.command_bar.handle_event(
-                Event.SHOW_MESSAGE, "Error: Session not killed", is_error=True
-            )
+        except ValueError as error:
+            self.command_bar.handle_event(Event.SHOW_MESSAGE, str(error), is_error=True)
 
     def _save_session(self) -> None:
         """
@@ -226,10 +216,8 @@ class CursesPresenter(Presenter[None]):
             ):
                 return
             self.model.save_session(session)
-        except ValueError:
-            self.command_bar.handle_event(
-                Event.SHOW_MESSAGE, "Error: Session not saved", is_error=True
-            )
+        except ValueError as error:
+            self.command_bar.handle_event(Event.SHOW_MESSAGE, str(error), is_error=True)
 
     def _delete_session(self) -> None:
         """
@@ -241,10 +229,8 @@ class CursesPresenter(Presenter[None]):
                 f"Delete {session.name}? (y/N)", "Error: session not deleted"
             ):
                 self.model.delete_session(session)
-        except ValueError:
-            self.command_bar.handle_event(
-                Event.SHOW_MESSAGE, "Error: Session not deleted", is_error=True
-            )
+        except ValueError as error:
+            self.command_bar.handle_event(Event.SHOW_MESSAGE, str(error), is_error=True)
 
     def _rename_session(self) -> None:
         """
@@ -259,10 +245,8 @@ class CursesPresenter(Presenter[None]):
             )
             if new_name:
                 self.model.rename_session(session, new_name)
-        except ValueError:
-            self.command_bar.handle_event(
-                Event.SHOW_MESSAGE, "Error: Session not renamed", is_error=True
-            )
+        except ValueError as error:
+            self.command_bar.handle_event(Event.SHOW_MESSAGE, str(error), is_error=True)
 
     def _invalid_command(self, command: Event) -> None:
         """
