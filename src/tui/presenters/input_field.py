@@ -12,15 +12,10 @@ class InputFieldPresenter(Presenter[Union[bool, str, None]]):
         self.cursor_pos: Tuple[int, int] = (0, 0)
         self.text: str = ""
 
-    def activate(self) -> None:
+    def toggle_active(self) -> None:
         self.text = ""
         self.cursor_pos = (0, 0)
-        self.active = True
-
-    def deactivate(self) -> None:
-        self.text = ""
-        self.cursor_pos = (0, 0)
-        self.active = False
+        self.active = not self.active
 
     def update_view(self) -> None:
         pass
@@ -36,11 +31,13 @@ class InputFieldPresenter(Presenter[Union[bool, str, None]]):
                 self._show_message(args[0], is_error)
             case Event.CONFIRM:
                 confirmation = self._confirm(args[0])
-                self.deactivate()
+                if self.active:
+                    self.toggle_active()
                 return confirmation
             case Event.INPUT:
                 output = self._input(args[0])
-                self.deactivate()
+                if self.active:
+                    self.toggle_active()
                 if output:
                     return output
         return None
@@ -49,7 +46,7 @@ class InputFieldPresenter(Presenter[Union[bool, str, None]]):
         self.view.render(message, (0, 0), is_error=is_error)
 
     def _confirm(self, confirmation_prompt: str) -> bool:
-        self.activate()
+        self.toggle_active()
         self.view.render(confirmation_prompt, (0, len(confirmation_prompt)))
         self._handle_key_press(self.view.get_event())
         if self.text == "y" or self.text == "Y":
@@ -57,7 +54,7 @@ class InputFieldPresenter(Presenter[Union[bool, str, None]]):
         return False
 
     def _input(self, prompt: str) -> str:
-        self.activate()
+        self.toggle_active()
         while self.active:
             self.view.render(
                 prompt + self.text,
@@ -71,7 +68,7 @@ class InputFieldPresenter(Presenter[Union[bool, str, None]]):
             case Key.UNKNOWN:
                 pass
             case Key.ESC:
-                self.deactivate()
+                self.toggle_active()
             case Key.ENTER:
                 self.active = False
             case Key.BACKSPACE:

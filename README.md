@@ -78,7 +78,7 @@ This will open a TUI where you can manage your tmux sessions.
 - [x] Fix keybinds for the TUI
 - [x] Tmux Plugin Manager support
 - [x] Add better tests for the curses presenter class
-- [ ] Remove the presenter deactivate method
+- [x] Remove the presenter deactivate method
 - [ ] Add proper error handling to the TUI
 - [ ] Fix color scheme for the TUI
 - [ ] Implement scrolling in the TUI

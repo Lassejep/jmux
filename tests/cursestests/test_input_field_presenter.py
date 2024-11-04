@@ -17,35 +17,29 @@ class TestConstructor:
         assert isinstance(InputFieldPresenter(mock_view, mock_model), Presenter)
 
 
-class TestActivate:
+class TestToggleActive:
     @pytest.fixture(autouse=True)
     def setup(self, mock_view, mock_model):
         self.view = mock_view
         self.model = mock_model
         self.presenter = InputFieldPresenter(self.view, self.model)
 
-    def test_sets_active_to_true(self):
+    def test_toggles_active_state(self):
         self.presenter.active = False
-        self.presenter.activate()
+        self.presenter.toggle_active()
         assert self.presenter.active is True
+        self.presenter.toggle_active()
+        assert self.presenter.active is False
 
     def resets_input_field(self):
         self.presenter.input_field = "test"
-        self.presenter.activate()
+        self.presenter.toggle_active()
         assert self.presenter.input_field == ""
 
     def resets_cursor_position(self):
         self.presenter.cursor_position = (10, 10)
-        self.presenter.activate()
+        self.presenter.toggle_active()
         assert self.presenter.cursor_position == (0, 0)
-
-
-class TestDeactivate:
-    def test_sets_active_to_false(self, mock_view, mock_model):
-        presenter = InputFieldPresenter(mock_view, mock_model)
-        presenter.active = True
-        presenter.deactivate()
-        assert presenter.active is False
 
 
 class TestGetEvent:
@@ -80,9 +74,9 @@ class TestHandleConfirmEvent:
         self.presenter = InputFieldPresenter(self.view, self.model)
 
     def test_activates_input_field(self):
-        self.mocker.patch.object(self.presenter, "activate")
+        self.mocker.patch.object(self.presenter, "toggle_active")
         self.presenter.handle_event(Event.CONFIRM, "test")
-        self.presenter.activate.assert_called_once()
+        self.presenter.toggle_active.assert_called_once()
 
     def test_renders_prompt(self):
         self.presenter.handle_event(Event.CONFIRM, "test")
@@ -110,9 +104,8 @@ class TestHandleConfirmEvent:
         assert self.presenter.handle_event(Event.CONFIRM, "test") is False
 
     def test_deactivates_input_field(self):
-        self.mocker.patch.object(self.presenter, "deactivate")
         self.presenter.handle_event(Event.CONFIRM, "test")
-        self.presenter.deactivate.assert_called_once()
+        assert self.presenter.active is False
 
 
 class TestHandleInputEvent:
@@ -124,9 +117,9 @@ class TestHandleInputEvent:
         self.presenter = InputFieldPresenter(self.view, self.model)
 
     def test_activates_input_field(self):
-        self.mocker.patch.object(self.presenter, "activate")
+        self.mocker.patch.object(self.presenter, "toggle_active")
         self.presenter.handle_event(Event.INPUT, "test")
-        self.presenter.activate.assert_called_once()
+        self.presenter.toggle_active.assert_called_once()
 
     def test_renders_prompt(self):
         self.view.get_event.return_value = Key.ENTER
@@ -163,14 +156,9 @@ class TestHandleInputEvent:
         self.view.render.assert_called_with("testa", (0, len("testa")))
 
     def test_deactivates_input_field(self):
-        self.mocker.patch.object(
-            self.presenter,
-            "deactivate",
-            side_effect=lambda: setattr(self.presenter, "active", False),
-        )
         self.view.get_event.return_value = Key.ENTER
         self.presenter.handle_event(Event.INPUT, "test")
-        self.presenter.deactivate.assert_called_once()
+        assert self.presenter.active is False
 
     def test_returns_none_when_escape_key_pressed(self):
         self.view.get_event.side_effect = [Key.A_LOWER, Key.ESC]

@@ -22,7 +22,7 @@ class CursesGui:
         self._create_views(stdscr)
         self._create_presenters()
         self._inject_dependencies()
-        self.presenter.activate()
+        self.presenter.toggle_active()
 
     def _setup_curses(self) -> None:
         curses.curs_set(0)

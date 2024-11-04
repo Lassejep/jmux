@@ -15,19 +15,13 @@ class TestConstructor:
         assert isinstance(FileMenuPresenter(mock_view, mock_model), Presenter)
 
 
-class TestActivate:
-    def test_sets_active_to_true(self, mock_view, mock_model):
+class TestToggleActive:
+    def test_toggles_active_state(self, mock_view, mock_model):
         presenter = FileMenuPresenter(mock_view, mock_model)
         presenter.active = False
-        presenter.activate()
+        presenter.toggle_active()
         assert presenter.active is True
-
-
-class TestDeactivate:
-    def test_sets_active_to_false(self, mock_view, mock_model):
-        presenter = FileMenuPresenter(mock_view, mock_model)
-        presenter.active = True
-        presenter.deactivate()
+        presenter.toggle_active()
         assert presenter.active is False
 
 

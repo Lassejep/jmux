@@ -39,7 +39,7 @@ class TestConstructor:
         )
 
 
-class TestActivate:
+class TestToggleActive:
     @pytest.fixture(autouse=True)
     def setup(self, mocker):
         self.mocker = mocker
@@ -58,12 +58,28 @@ class TestActivate:
 
     def test_runs_event_loop(self):
         self.mocker.patch.object(self.presenter, "get_event", return_value=Event.EXIT)
-        assert self.presenter.activate() is None
+        assert self.presenter.toggle_active() is None
 
     def test_gets_event(self):
         self.mocker.patch.object(self.presenter, "get_event", return_value=Event.EXIT)
-        self.presenter.activate()
+        self.presenter.toggle_active()
         self.presenter.get_event.assert_called()
+
+    def test_handles_event(self):
+        self.mocker.patch.object(self.presenter, "get_event", return_value=Event.EXIT)
+        self.mocker.patch.object(
+            self.presenter,
+            "handle_event",
+            side_effect=lambda _: setattr(self.presenter, "active", False),
+        )
+        self.presenter.toggle_active()
+        self.presenter.handle_event.assert_called()
+
+    def test_updates_view(self):
+        self.mocker.patch.object(self.presenter, "get_event", return_value=Event.EXIT)
+        self.mocker.patch.object(self.presenter, "update_view")
+        self.presenter.toggle_active()
+        self.presenter.update_view.assert_called()
 
     def test_runs_event_loop_until_exit_event(self):
         self.mocker.patch.object(
@@ -71,34 +87,8 @@ class TestActivate:
             "get_event",
             side_effect=[Event.NOOP, Event.NOOP, Event.EXIT],
         )
-        self.presenter.activate()
+        self.presenter.toggle_active()
         assert self.presenter.get_event.call_count == 3
-
-    def test_calls_update_view(self):
-        self.mocker.patch.object(self.presenter, "get_event", return_value=Event.EXIT)
-        self.mocker.patch.object(self.presenter, "update_view")
-        self.presenter.activate()
-        self.presenter.update_view.assert_called()
-
-    def test_calls_handle_event(self):
-        self.mocker.patch.object(self.presenter, "get_event", return_value=Event.EXIT)
-        self.mocker.patch.object(
-            self.presenter,
-            "handle_event",
-            side_effect=lambda _: setattr(self.presenter, "active", False),
-        )
-        self.presenter.activate()
-        self.presenter.handle_event.assert_called()
-
-
-class TestDeactivate:
-    def test_sets_active_to_false(self, mock_view, mock_model, mock_presenter):
-        presenter = CursesPresenter(
-            mock_view, mock_model, mock_presenter, mock_presenter, mock_presenter
-        )
-        presenter.active = True
-        presenter.deactivate()
-        assert presenter.active is False
 
 
 class TestUpdateView:
@@ -215,12 +205,12 @@ class TestHandleMoveLeftEvent:
     def test_activates_multiplexer_menu(self):
         self.presenter.state = CursesStates.FILE_MENU
         self.presenter.handle_event(Event.MOVE_LEFT)
-        self.presenter.multiplexer_menu.activate.assert_called()
+        self.presenter.multiplexer_menu.toggle_active.assert_called()
 
     def test_deactivates_file_menu(self):
         self.presenter.state = CursesStates.FILE_MENU
         self.presenter.handle_event(Event.MOVE_LEFT)
-        self.presenter.file_menu.deactivate.assert_called()
+        self.presenter.file_menu.toggle_active.assert_called()
 
 
 class TestHandleMoveRightEvent:
@@ -253,12 +243,12 @@ class TestHandleMoveRightEvent:
     def test_activates_file_menu(self):
         self.presenter.state = CursesStates.MULTIPLEXER_MENU
         self.presenter.handle_event(Event.MOVE_RIGHT)
-        self.presenter.file_menu.activate.assert_called()
+        self.presenter.file_menu.toggle_active.assert_called()
 
     def test_deactivates_multiplexer_menu(self):
         self.presenter.state = CursesStates.MULTIPLEXER_MENU
         self.presenter.handle_event(Event.MOVE_RIGHT)
-        self.presenter.multiplexer_menu.deactivate.assert_called()
+        self.presenter.multiplexer_menu.toggle_active.assert_called()
 
 
 class TestHandleMoveUpEvent:

@@ -15,17 +15,11 @@ class MultiplexerMenuPresenter(Presenter[Optional[SessionLabel]]):
         self.active: bool = False
         self.sessions: List[SessionLabel] = self.model.list_running_sessions()
 
-    def activate(self) -> None:
+    def toggle_active(self) -> None:
         """
         Activate the presenter.
         """
-        self.active = True
-
-    def deactivate(self) -> None:
-        """
-        Deactivate the presenter.
-        """
-        self.active = False
+        self.active = not self.active
 
     def update_view(self) -> None:
         """

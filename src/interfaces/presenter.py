@@ -20,16 +20,9 @@ class Presenter(ABC, Generic[ReturnType]):
         raise NotImplementedError
 
     @abstractmethod
-    def activate(self) -> None:
+    def toggle_active(self) -> None:
         """
         Activate the presenter.
-        """
-        raise NotImplementedError
-
-    @abstractmethod
-    def deactivate(self) -> None:
-        """
-        Deactivate the presenter.
         """
         raise NotImplementedError
 

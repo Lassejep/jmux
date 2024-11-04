@@ -27,26 +27,20 @@ class CursesPresenter(Presenter[None]):
 
     def _render_starting_screen(self) -> None:
         self.view.render()
-        self.multiplexer_menu.activate()
+        self.multiplexer_menu.toggle_active()
         self.multiplexer_menu.update_view()
         self.file_menu.update_view()
         self.command_bar.update_view()
 
-    def activate(self) -> None:
+    def toggle_active(self) -> None:
         """
         Activate the presenter.
         """
-        self.active = True
+        self.active = not self.active
         while self.active:
             self.update_view()
             event = self.get_event()
             self.handle_event(event)
-
-    def deactivate(self) -> None:
-        """
-        Deactivate the presenter.
-        """
-        self.active = False
 
     def update_view(self) -> None:
         """
@@ -73,7 +67,8 @@ class CursesPresenter(Presenter[None]):
         """
         match event:
             case Event.EXIT:
-                self.deactivate()
+                if self.active:
+                    self.toggle_active()
             case Event.MOVE_LEFT:
                 self._move_left()
             case Event.MOVE_RIGHT:
@@ -140,16 +135,16 @@ class CursesPresenter(Presenter[None]):
         Move the cursor left.
         """
         self.state = CursesStates.MULTIPLEXER_MENU
-        self.multiplexer_menu.activate()
-        self.file_menu.deactivate()
+        self.multiplexer_menu.toggle_active()
+        self.file_menu.toggle_active()
 
     def _move_right(self) -> None:
         """
         Move the cursor right.
         """
         self.state = CursesStates.FILE_MENU
-        self.file_menu.activate()
-        self.multiplexer_menu.deactivate()
+        self.file_menu.toggle_active()
+        self.multiplexer_menu.toggle_active()
 
     def _move_up(self) -> None:
         """
